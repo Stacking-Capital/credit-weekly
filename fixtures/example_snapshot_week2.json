@@ -1,0 +1,498 @@
+{
+  "schema_version": "1.0.0",
+  "snapshot_id": "snap_2026-W47_952b5f94",
+  "week_label": "2026-W47",
+  "captured_at": "2026-11-22T00:46:53.890193+00:00",
+  "is_example_data": true,
+  "bureaus": {
+    "equifax": {
+      "bureau": "equifax",
+      "source": {
+        "origin": "annualcreditreport.com",
+        "parser": "equifax-template-v1",
+        "file_number_masked": "",
+        "report_date": "2026-11-16",
+        "confidence": 65
+      },
+      "personal_info": {
+        "names": [
+          "Jordan Example"
+        ],
+        "ssn_last4": "0000",
+        "dob_year": "1990",
+        "addresses": [
+          {
+            "text": "100 Maple Ave, Austin, TX 78701",
+            "kind": "current",
+            "reported": ""
+          }
+        ],
+        "employers": []
+      },
+      "accounts": [
+        {
+          "id": "tl_4f9cbf5319677fd8",
+          "creditor": "SUMMIT BANK NA",
+          "account_number_masked": "****1234",
+          "kind": "revolving",
+          "account_type": "Revolving",
+          "loan_type": "Credit Card",
+          "responsibility": "",
+          "status": "Pays as Agreed",
+          "is_open": true,
+          "is_adverse": false,
+          "balance_cents": 95000,
+          "credit_limit_cents": 1200000,
+          "high_balance_cents": null,
+          "past_due_cents": null,
+          "monthly_payment_cents": null,
+          "opened": "2021-04-15",
+          "closed": "",
+          "updated": "2026-11-12",
+          "last_payment": "",
+          "dofd": "",
+          "original_creditor": "",
+          "remarks": [],
+          "payment_history": [],
+          "confidence": 65
+        },
+        {
+          "id": "tl_a81323d9d5e6a5c9",
+          "creditor": "NORTHSTAR CREDIT UNION",
+          "account_number_masked": "****5678",
+          "kind": "revolving",
+          "account_type": "Revolving",
+          "loan_type": "Credit Card",
+          "responsibility": "",
+          "status": "Pays as Agreed",
+          "is_open": true,
+          "is_adverse": false,
+          "balance_cents": 40000,
+          "credit_limit_cents": 500000,
+          "high_balance_cents": null,
+          "past_due_cents": null,
+          "monthly_payment_cents": null,
+          "opened": "2022-08-01",
+          "closed": "",
+          "updated": "2026-11-11",
+          "last_payment": "",
+          "dofd": "",
+          "original_creditor": "",
+          "remarks": [],
+          "payment_history": [],
+          "confidence": 65
+        }
+      ],
+      "collections": [],
+      "inquiries": [],
+      "public_records": [],
+      "warnings": [
+        "Equifax parser uses generic labeled-field template matching; TODO: calibrate coordinates against a real saved AnnualCreditReport.com PDF."
+      ]
+    },
+    "experian": {
+      "bureau": "experian",
+      "source": {
+        "origin": "annualcreditreport.com",
+        "parser": "experian-template-v1",
+        "file_number_masked": "",
+        "report_date": "2026-11-16",
+        "confidence": 65
+      },
+      "personal_info": {
+        "names": [
+          "Jordan Example"
+        ],
+        "ssn_last4": "0000",
+        "dob_year": "1990",
+        "addresses": [
+          {
+            "text": "100 Maple Ave, Austin, TX 78701",
+            "kind": "current",
+            "reported": ""
+          }
+        ],
+        "employers": []
+      },
+      "accounts": [
+        {
+          "id": "tl_4f9cbf5319677fd8",
+          "creditor": "SUMMIT BANK NA",
+          "account_number_masked": "****1234",
+          "kind": "revolving",
+          "account_type": "Revolving",
+          "loan_type": "Credit Card",
+          "responsibility": "",
+          "status": "Open / Never Late",
+          "is_open": true,
+          "is_adverse": true,
+          "balance_cents": 95000,
+          "credit_limit_cents": 1200000,
+          "high_balance_cents": null,
+          "past_due_cents": null,
+          "monthly_payment_cents": null,
+          "opened": "2021-04-15",
+          "closed": "",
+          "updated": "2026-11-12",
+          "last_payment": "",
+          "dofd": "",
+          "original_creditor": "",
+          "remarks": [],
+          "payment_history": [],
+          "confidence": 65
+        },
+        {
+          "id": "tl_a81323d9d5e6a5c9",
+          "creditor": "NORTHSTAR CREDIT UNION",
+          "account_number_masked": "****5678",
+          "kind": "revolving",
+          "account_type": "Revolving",
+          "loan_type": "Credit Card",
+          "responsibility": "",
+          "status": "Open / Never Late",
+          "is_open": true,
+          "is_adverse": true,
+          "balance_cents": 40000,
+          "credit_limit_cents": 500000,
+          "high_balance_cents": null,
+          "past_due_cents": null,
+          "monthly_payment_cents": null,
+          "opened": "2022-08-01",
+          "closed": "",
+          "updated": "2026-11-11",
+          "last_payment": "",
+          "dofd": "",
+          "original_creditor": "",
+          "remarks": [],
+          "payment_history": [],
+          "confidence": 65
+        },
+        {
+          "id": "tl_42d0a29774a8203b",
+          "creditor": "CASCADIA AUTO FINANCE",
+          "account_number_masked": "****9012",
+          "kind": "installment",
+          "account_type": "Installment",
+          "loan_type": "Auto Loan",
+          "responsibility": "",
+          "status": "Open / Never Late",
+          "is_open": true,
+          "is_adverse": true,
+          "balance_cents": 1105000,
+          "credit_limit_cents": null,
+          "high_balance_cents": 1800000,
+          "past_due_cents": null,
+          "monthly_payment_cents": null,
+          "opened": "2024-02-10",
+          "closed": "",
+          "updated": "2026-11-10",
+          "last_payment": "",
+          "dofd": "",
+          "original_creditor": "",
+          "remarks": [],
+          "payment_history": [],
+          "confidence": 65
+        }
+      ],
+      "collections": [],
+      "inquiries": [
+        {
+          "id": "iq_9067fe8ebc880d87",
+          "creditor": "HARBOR MORTGAGE PREQUAL",
+          "date": "2026-04-02",
+          "kind": "hard",
+          "permissible_purpose": ""
+        }
+      ],
+      "public_records": [],
+      "warnings": [
+        "Experian parser uses generic labeled-field template matching; TODO: calibrate coordinates against a real saved AnnualCreditReport.com PDF."
+      ]
+    },
+    "transunion": {
+      "bureau": "transunion",
+      "source": {
+        "origin": "annualcreditreport.com",
+        "parser": "transunion-acr-v1",
+        "file_number_masked": "****0000",
+        "report_date": "2026-11-16",
+        "confidence": 100
+      },
+      "personal_info": {
+        "names": [
+          "Jordan Example"
+        ],
+        "ssn_last4": "0000",
+        "dob_year": "1990",
+        "addresses": [
+          {
+            "text": "100 Maple Ave, Austin, TX 78701",
+            "kind": "current",
+            "reported": ""
+          }
+        ],
+        "employers": [
+          "ACME EXAMPLE CORP"
+        ]
+      },
+      "accounts": [
+        {
+          "id": "tl_4f9cbf5319677fd8",
+          "creditor": "SUMMIT BANK NA",
+          "account_number_masked": "****1234",
+          "kind": "revolving",
+          "account_type": "Revolving",
+          "loan_type": "Credit Card",
+          "responsibility": "Individual",
+          "status": "Paid or Paying as Agreed",
+          "is_open": false,
+          "is_adverse": false,
+          "balance_cents": 95000,
+          "credit_limit_cents": 1000000,
+          "high_balance_cents": 240000,
+          "past_due_cents": null,
+          "monthly_payment_cents": 3500,
+          "opened": "2021-04-15",
+          "closed": "",
+          "updated": "2026-11-12",
+          "last_payment": "",
+          "dofd": "",
+          "original_creditor": "",
+          "remarks": [],
+          "payment_history": [
+            {
+              "month": "2026-01",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-02",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-03",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-04",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-05",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-06",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-07",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-08",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-09",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-10",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-11",
+              "rating": "OK"
+            }
+          ],
+          "confidence": 100
+        },
+        {
+          "id": "tl_a81323d9d5e6a5c9",
+          "creditor": "NORTHSTAR CREDIT UNION",
+          "account_number_masked": "****5678",
+          "kind": "revolving",
+          "account_type": "Revolving",
+          "loan_type": "Credit Card",
+          "responsibility": "Individual",
+          "status": "Paid or Paying as Agreed",
+          "is_open": false,
+          "is_adverse": false,
+          "balance_cents": 40000,
+          "credit_limit_cents": 500000,
+          "high_balance_cents": 120000,
+          "past_due_cents": null,
+          "monthly_payment_cents": 3500,
+          "opened": "2022-08-01",
+          "closed": "",
+          "updated": "2026-11-11",
+          "last_payment": "",
+          "dofd": "",
+          "original_creditor": "",
+          "remarks": [],
+          "payment_history": [
+            {
+              "month": "2026-01",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-02",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-03",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-04",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-05",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-06",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-07",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-08",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-09",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-10",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-11",
+              "rating": "OK"
+            }
+          ],
+          "confidence": 100
+        },
+        {
+          "id": "tl_42d0a29774a8203b",
+          "creditor": "CASCADIA AUTO FINANCE",
+          "account_number_masked": "****9012",
+          "kind": "installment",
+          "account_type": "Installment",
+          "loan_type": "Auto Loan",
+          "responsibility": "Individual",
+          "status": "Paid or Paying as Agreed",
+          "is_open": false,
+          "is_adverse": false,
+          "balance_cents": 1105000,
+          "credit_limit_cents": null,
+          "high_balance_cents": 1800000,
+          "past_due_cents": null,
+          "monthly_payment_cents": 38000,
+          "opened": "2024-02-10",
+          "closed": "",
+          "updated": "2026-11-10",
+          "last_payment": "",
+          "dofd": "",
+          "original_creditor": "",
+          "remarks": [],
+          "payment_history": [
+            {
+              "month": "2026-01",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-02",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-03",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-04",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-05",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-06",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-07",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-08",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-09",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-10",
+              "rating": "OK"
+            },
+            {
+              "month": "2026-11",
+              "rating": "OK"
+            }
+          ],
+          "confidence": 100
+        }
+      ],
+      "collections": [],
+      "inquiries": [
+        {
+          "id": "iq_84feb4e4a6bcf6e6",
+          "creditor": "NORTHSTAR CREDIT UNION",
+          "date": "2026-06-12",
+          "kind": "hard",
+          "permissible_purpose": "Credit Application"
+        },
+        {
+          "id": "iq_3e388b50bfdbe61f",
+          "creditor": "HARBOR PREMIER BANK",
+          "date": "2026-11-14",
+          "kind": "hard",
+          "permissible_purpose": "Credit Card Application"
+        },
+        {
+          "id": "iq_84082bdd8e119dc1",
+          "creditor": "EXAMPLE CARD OFFERS LLC",
+          "date": "2026-10-20",
+          "kind": "promotional",
+          "permissible_purpose": "Promotional"
+        }
+      ],
+      "public_records": [],
+      "warnings": []
+    }
+  },
+  "health_summary": {
+    "bureaus_present": [
+      "equifax",
+      "experian",
+      "transunion"
+    ],
+    "total_accounts": 3,
+    "open_accounts": 3,
+    "revolving_balance_cents": 135000,
+    "revolving_limit_cents": 1700000,
+    "utilization_pct": 7.9,
+    "adverse_accounts": 1,
+    "collections_count": 0,
+    "hard_inquiries_24m": 3,
+    "public_records_count": 0,
+    "on_time_history_pct": 100.0
+  }
+}

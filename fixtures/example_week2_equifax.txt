@@ -1,0 +1,30 @@
+Equifax Credit Report (EXAMPLE DATA - SYNTHETIC)
+Report Date: 2026-11-16
+Name: Jordan Example
+SSN: 000-00-0000
+Date of Birth: 1990-01-01
+Address: 100 Maple Ave, Austin, TX 78701
+
+Accounts
+Account Name: SUMMIT BANK NA
+Account Number: ****1234
+Account Type: Revolving
+Loan Type: Credit Card
+Status: Pays as Agreed
+Balance: $950
+Credit Limit: $12,000
+Date Opened: 2021-04-15
+Date Updated: 2026-11-12
+
+Account Name: NORTHSTAR CREDIT UNION
+Account Number: ****5678
+Account Type: Revolving
+Loan Type: Credit Card
+Status: Pays as Agreed
+Balance: $400
+Credit Limit: $5,000
+Date Opened: 2022-08-01
+Date Updated: 2026-11-11
+
+Public Records
+None

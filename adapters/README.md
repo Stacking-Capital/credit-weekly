@@ -1,0 +1,13 @@
+# Adapters — run Credit Weekly on other AIs
+
+The **model-agnostic core** lives in `/workspace/credit-weekly/src/credit_weekly/` (schema, parsers, diff, optimizer, AES-256-GCM vault, CLI, canvas/HTML exporters). No adapter should fork that logic. Each folder here is a *runtime recipe*: how that platform packages instructions, runs the AnnualCreditReport.com pull, schedules the weekly check-in, notifies the user, and renders the dashboard.
+
+| Platform | Folder | Closest equivalent to a Grok Bot | Feasibility (Nov 2026) |
+|----------|--------|----------------------------------|------------------------|
+| Grok Bot (primary) | [`grok/`](grok/README.md) | Grok Bot template + skills + routines + Grok Page | **Best fit** — native packaging, private box, persistent Page |
+| ChatGPT | [`chatgpt/`](chatgpt/README.md) | ChatGPT **Plugins** (Custom GPTs retire Dec 11, 2026) + Work cloud browser + Scheduled tasks | **Strong with paid Work** — weekly schedule and browser exist; no Grok Page; do not rely on retired GPTs or "ChatGPT agent" |
+| Claude | [`claude/`](claude/README.md) | Claude **Skills** + Desktop/cloud scheduled tasks + computer use / Claude in Chrome | **Strongest non-Grok port** — SKILL.md format is nearly identical; Desktop tasks can run the local Python core |
+| Gemini | [`gemini/`](gemini/README.md) | Gemini **Skills** (Gems are being replaced) + Tasks schedules + Mac computer use | **Good on Mac, US, paid personal accounts** — weekly Tasks + computer use; dashboard is Docs/Sheets or local HTML |
+| Meta Muse | [`meta/`](meta/README.md) | **Muse** personal agent (launched Sep 8, 2026; Secure VM browser). Not Meta AI Studio (character creation frozen Aug 10, 2026) and not Microsoft Muse | **Experimental** — form-filling VM can assist an ACR pull with user approval; recurring weekly schedule and a persistent dashboard are **unconfirmed** |
+
+Shared rules on every port: the user should never be sent to bureau sites to self-serve. Prefer a write-only secret form (Grok: RequestUserForm) that fills the live browser; if the host has no such form, the user types SSN/DOB/OTP only in the bureau browser the agent is driving, never in chat. Snapshots stay on the user's machine or that platform's private store, encrypted when possible. After one-time setup, prefer Vault/saved bureau logins and a remembered device; residual OTP is still possible. Work in three stages: Stage 1 ACR reports (no scores) plus a versioned 700.credit export; Stage 2 bureau-direct scores (Experian FICO 8, myEquifax and TU VantageScore 3.0); Stage 3 optional FICO 8 trio (myFICO Free + CreditWise). The Credit-Health Index is labeled **not a FICO score**.

@@ -1,0 +1,32 @@
+# Secrets and private user data — never commit
+vault/
+inbox/
+*.pdf
+canvas_id.txt
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Temporary parse output
+/tmp/
+*.tmp
+
+# Internal pitch mockups, not part of the toolkit
+vision-slide/

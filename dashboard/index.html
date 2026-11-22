@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Credit Weekly — 3-Bureau Report Monitor</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --brand: #1d4ed8;
+      --brand-soft: #eff6ff;
+      --good: #15803d;
+      --good-bg: #dcfce7;
+      --warn: #b45309;
+      --warn-bg: #fef3c7;
+      --bad: #b91c1c;
+      --bad-bg: #fee2e2;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-mark {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+      color: #fff; font-weight: 700; display: grid; place-items: center;
+    }
+    .brand h1 { font-size: 18px; margin: 0; }
+    .subtitle { font-size: 13px; color: var(--muted); }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    }
+    .badge-good { background: var(--good-bg); color: var(--good); }
+    .badge-warn { background: var(--warn-bg); color: var(--warn); }
+    .badge-bad { background: var(--bad-bg); color: var(--bad); }
+    .badge-brand { background: var(--brand-soft); color: var(--brand); }
+    .container { max-width: 1120px; margin: 24px auto; padding: 0 20px 48px; }
+    .grid-4 {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; margin-bottom: 20px;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    }
+    .metric-label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+    .metric-value { font-size: 28px; font-weight: 700; margin: 6px 0 4px; }
+    .metric-sub { font-size: 13px; color: var(--muted); }
+    .bar-track { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 10px; }
+    .bar-fill { height: 100%; background: var(--brand); border-radius: 999px; transition: width .25s; }
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      justify-content: space-between; margin: 20px 0 16px;
+    }
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill {
+      border: 1px solid var(--border); background: var(--surface); color: var(--text);
+      padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+      cursor: pointer;
+    }
+    .pill.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .search {
+      padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px;
+      font-size: 13px; min-width: 220px; background: var(--surface);
+    }
+    .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 16px; overflow-x: auto; }
+    .tab {
+      background: transparent; border: none; border-bottom: 2px solid transparent;
+      padding: 10px 14px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer;
+    }
+    .tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th {
+      text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .03em;
+      color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border);
+    }
+    td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+    tr:last-child td { border-bottom: none; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .alert-row {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid #f1f5f9;
+    }
+    .alert-row:last-child { border-bottom: none; }
+    .file-btn {
+      font-size: 12px; color: var(--brand); cursor: pointer; text-decoration: underline;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">CW</div>
+      <div>
+        <h1>Credit Weekly <span id="exampleTag" class="badge badge-warn hidden">SYNTHETIC EXAMPLE DATA</span></h1>
+        <div class="subtitle" id="weekSub">Load data.js or choose a bundle JSON</div>
+      </div>
+    </div>
+    <div>
+      <label class="file-btn">Load JSON bundle<input type="file" id="jsonFile" accept=".json" class="hidden" /></label>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="grid-4" id="metricsGrid"></section>
+
+    <div class="controls">
+      <div class="pills" id="bureauPills"></div>
+      <input type="search" id="searchInput" class="search" placeholder="Search creditor or status..." />
+    </div>
+
+    <div class="tabs" id="viewTabs"></div>
+
+    <section class="card" id="mainPanel"></section>
+  </main>
+
+  <script src="./data.js"></script>
+  <script>
+    let DATA = window.CREDIT_WEEKLY_DATA || null;
+    let state = { bureau: "all", tab: "overview", query: "" };
+
+    const BUREAUS = [
+      { key: "all", label: "All 3 Bureaus" },
+      { key: "experian", label: "Experian" },
+      { key: "equifax", label: "Equifax" },
+      { key: "transunion", label: "TransUnion" },
+    ];
+    const TABS = [
+      { key: "overview", label: "Weekly Changes & Bureaus" },
+      { key: "accounts", label: "Accounts" },
+      { key: "inquiries", label: "Inquiries" },
+      { key: "derogatory", label: "Collections & Public" },
+      { key: "personal", label: "Personal Info" },
+    ];
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function render() {
+      if (!DATA) {
+        document.getElementById("mainPanel").innerHTML = "<p>Run <code>python3 -m credit_weekly.cli demo</code> to generate <code>data.js</code> or load a JSON bundle above.</p>";
+        return;
+      }
+      document.getElementById("weekSub").textContent = `Week ${DATA.week_label} • Score-free AnnualCreditReport.com Report Health`;
+      document.getElementById("exampleTag").classList.toggle("hidden", !DATA.is_example_data);
+
+      const hs = DATA.health_summary;
+      const utilCls = hs.utilization_pct <= 10 ? "badge-good" : hs.utilization_pct <= 30 ? "badge-warn" : "badge-bad";
+      const advTotal = hs.adverse_accounts + hs.collections_count;
+      const advCls = advTotal === 0 ? "badge-good" : "badge-bad";
+
+      document.getElementById("metricsGrid").innerHTML = `
+        <div class="card">
+          <div class="metric-label">Revolving Utilization</div>
+          <div class="metric-value">${esc(hs.utilization_pct)}% <span class="badge ${utilCls}">${hs.utilization_pct <= 10 ? "Optimal" : hs.utilization_pct <= 30 ? "Good" : "High"}</span></div>
+          <div class="metric-sub">${esc(hs.revolving_balance_usd)} of ${esc(hs.revolving_limit_usd)} limit</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, hs.utilization_pct)}%"></div></div>
+        </div>
+        <div class="card">
+          <div class="metric-label">On-Time Payments</div>
+          <div class="metric-value">${esc(hs.on_time_history_pct)}%</div>
+          <div class="metric-sub">${esc(hs.open_accounts)} open / ${esc(hs.total_accounts)} total accounts</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">Hard Inquiries</div>
+          <div class="metric-value">${esc(hs.hard_inquiries_24m)}</div>
+          <div class="metric-sub">Across loaded bureaus</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">Adverse & Collections</div>
+          <div class="metric-value">${esc(advTotal)} <span class="badge ${advCls}">${advTotal === 0 ? "Clean" : "Review"}</span></div>
+          <div class="metric-sub">${esc(hs.collections_count)} collections • ${esc(hs.public_records_count)} public records</div>
+        </div>
+      `;
+
+      document.getElementById("bureauPills").innerHTML = BUREAUS.map((b) =>
+        `<button class="pill ${state.bureau === b.key ? "active" : ""}" onclick="setBureau('${b.key}')">${esc(b.label)}</button>`
+      ).join("");
+
+      document.getElementById("viewTabs").innerHTML = TABS.map((t) =>
+        `<button class="tab ${state.tab === t.key ? "active" : ""}" onclick="setTab('${t.key}')">${esc(t.label)}</button>`
+      ).join("");
+
+      const q = state.query.trim().toLowerCase();
+      const matchB = (row) => state.bureau === "all" || row.bureau === state.bureau;
+      const panel = document.getElementById("mainPanel");
+
+      if (state.tab === "overview") {
+        const alerts = (DATA.alerts || []).filter((a) => state.bureau === "all" || a.bureau === state.bureau);
+        const alertHtml = alerts.length
+          ? alerts.map((a) => {
+              const cls = a.severity === "critical" ? "badge-bad" : a.severity === "warning" ? "badge-warn" : "badge-good";
+              return `<div class="alert-row"><div><strong>${esc(a.title)}</strong><div class="subtitle">${esc(a.detail)}</div></div><span class="badge ${cls}">${esc(a.severity.toUpperCase())}</span></div>`;
+            }).join("")
+          : `<p class="subtitle">No changes detected vs prior snapshot.</p>`;
+
+        const bRows = (DATA.bureaus || []).map((b) => `
+          <tr>
+            <td><strong>${esc(b.label)}</strong></td>
+            <td>${esc(b.report_date || "—")}</td>
+            <td class="num">${esc(b.open_accounts)} / ${esc(b.total_accounts)}</td>
+            <td class="num">${esc(b.utilization_pct)}%</td>
+            <td class="num"><span class="badge ${b.adverse_count ? "badge-bad" : "badge-good"}">${esc(b.adverse_count)}</span></td>
+            <td class="num">${esc(b.hard_inquiries)}</td>
+            <td class="num">${esc(b.confidence)}%</td>
+          </tr>
+        `).join("");
+
+        panel.innerHTML = `
+          <h3 style="margin-top:0">What Changed This Week</h3>
+          ${alertHtml}
+          <h3 style="margin-top:24px">Bureau Coverage & Confidence</h3>
+          <table>
+            <thead><tr><th>Bureau</th><th>Report Date</th><th class="num">Open / Total</th><th class="num">Util</th><th class="num">Adverse</th><th class="num">Hard Inq</th><th class="num">Confidence</th></tr></thead>
+            <tbody>${bRows}</tbody>
+          </table>
+        `;
+      } else if (state.tab === "accounts") {
+        const rows = (DATA.accounts || []).filter((a) => matchB(a) && (!q || a.creditor.toLowerCase().includes(q) || a.status.toLowerCase().includes(q)));
+        panel.innerHTML = `
+          <h3 style="margin-top:0">Tradelines (${rows.length})</h3>
+          <table>
+            <thead><tr><th>Bureau</th><th>Creditor</th><th>Account</th><th>Type</th><th>Status</th><th class="num">Balance</th><th class="num">Limit</th><th class="num">Util</th></tr></thead>
+            <tbody>${rows.map((a) => `
+              <tr>
+                <td>${esc(a.bureau_label)}</td>
+                <td><strong>${esc(a.creditor)}</strong></td>
+                <td>${esc(a.masked)}</td>
+                <td>${esc(a.kind)}</td>
+                <td><span class="badge ${a.is_adverse ? "badge-bad" : "badge-good"}">${esc(a.status)}</span></td>
+                <td class="num">${esc(a.balance)}</td>
+                <td class="num">${esc(a.limit)}</td>
+                <td class="num">${esc(a.util)}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        `;
+      } else if (state.tab === "inquiries") {
+        const rows = (DATA.inquiries || []).filter((i) => matchB(i) && (!q || i.creditor.toLowerCase().includes(q)));
+        panel.innerHTML = `
+          <h3 style="margin-top:0">Inquiries (${rows.length})</h3>
+          <table>
+            <thead><tr><th>Bureau</th><th>Creditor</th><th>Date</th><th>Kind</th><th>Purpose</th></tr></thead>
+            <tbody>${rows.map((i) => `
+              <tr>
+                <td>${esc(i.bureau_label)}</td>
+                <td><strong>${esc(i.creditor)}</strong></td>
+                <td>${esc(i.date)}</td>
+                <td><span class="badge ${i.kind === "hard" ? "badge-warn" : "badge-brand"}">${esc(i.kind)}</span></td>
+                <td>${esc(i.purpose || "—")}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        `;
+      } else if (state.tab === "derogatory") {
+        const cols = (DATA.collections || []).filter(matchB);
+        const prs = (DATA.public_records || []).filter(matchB);
+        panel.innerHTML = `
+          <h3 style="margin-top:0">Collections (${cols.length}) & Public Records (${prs.length})</h3>
+          ${cols.length === 0 && prs.length === 0
+            ? `<p><span class="badge badge-good">All clear</span> Zero collections or public records found in the selected scope.</p>`
+            : `<table><thead><tr><th>Bureau</th><th>Item</th><th>Status</th><th class="num">Balance</th></tr></thead><tbody>
+                ${cols.map((c) => `<tr><td>${esc(c.bureau_label)}</td><td>${esc(c.creditor)} (${esc(c.masked)})</td><td><span class="badge badge-bad">${esc(c.status)}</span></td><td class="num">${esc(c.balance)}</td></tr>`).join("")}
+                ${prs.map((p) => `<tr><td>${esc(p.bureau_label)}</td><td>${esc(p.kind)} (Filed ${esc(p.filed_date)})</td><td><span class="badge badge-bad">${esc(p.status)}</span></td><td class="num">—</td></tr>`).join("")}
+              </tbody></table>`}
+        `;
+      } else if (state.tab === "personal") {
+        const rows = (DATA.personal_info || []).filter(matchB);
+        panel.innerHTML = `
+          <h3 style="margin-top:0">Personal Information (PII-Minimized)</h3>
+          <table>
+            <thead><tr><th>Bureau</th><th>Names</th><th>SSN (Masked)</th><th>Birth Year</th><th>Addresses</th><th>Employers</th></tr></thead>
+            <tbody>${rows.map((p) => `
+              <tr>
+                <td><strong>${esc(p.bureau_label)}</strong></td>
+                <td>${esc(p.names)}</td>
+                <td>${esc(p.ssn_last4)}</td>
+                <td>${esc(p.dob_year)}</td>
+                <td>${esc(p.addresses)}</td>
+                <td>${esc(p.employers)}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+    }
+
+    window.setBureau = (b) => { state.bureau = b; render(); };
+    window.setTab = (t) => { state.tab = t; render(); };
+    document.getElementById("searchInput").addEventListener("input", (e) => { state.query = e.target.value; render(); });
+    document.getElementById("jsonFile").addEventListener("change", async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      DATA = JSON.parse(await f.text());
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
