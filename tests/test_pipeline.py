@@ -9,7 +9,13 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from credit_weekly.canvas_export import build_dashboard_bundle, render_canvas_tsx  # noqa: E402
 from credit_weekly.diff import diff_snapshots  # noqa: E402
-from credit_weekly.models import mask_account_number, mask_ssn, new_snapshot  # noqa: E402
+from credit_weekly.models import (  # noqa: E402
+    compute_credit_health_index,
+    credit_health_band,
+    mask_account_number,
+    mask_ssn,
+    new_snapshot,
+)
 from credit_weekly.parsers import parse_report_file  # noqa: E402
 from credit_weekly.vault import decrypt_json_file, encrypt_json_file  # noqa: E402
 
@@ -38,6 +44,50 @@ class PipelineTests(unittest.TestCase):
         tsx = render_canvas_tsx(bundle)
         self.assertIn('from "grok/canvas"', tsx)
         self.assertNotIn("000-00-0000", tsx)
+
+        self.assertIn("Not a FICO score", tsx)
+        self.assertIn("credit_health_index", tsx)
+
+    def test_credit_health_index_formula(self):
+        # 7.9% util is in the 1–9 band (30 pts); 100% on-time (35);
+        # 1 adverse (20-8=12); 3 hard inquiries (15-3=12) => 89.
+        self.assertEqual(compute_credit_health_index(7.9, 100.0, 1, 0, 0, 3), 89)
+        self.assertEqual(credit_health_band(89), "Good")
+        # 16.7% util interpolates 9–20 (22 pts); 2 inquiries stay at 15 => 84.
+        self.assertEqual(compute_credit_health_index(16.7, 100.0, 1, 0, 0, 2), 84)
+        self.assertEqual(credit_health_band(84), "Good")
+        # A 0% balance is slightly dinged versus 1–9%.
+        self.assertEqual(compute_credit_health_index(0.0, 100.0, 0, 0, 0, 0), 97)
+        self.assertEqual(credit_health_band(97), "Excellent")
+        self.assertEqual(credit_health_band(70), "Fair")
+        self.assertEqual(credit_health_band(49), "At risk")
+
+    def test_consumer_dashboard_bundle(self):
+        s1 = json.loads((ROOT / "fixtures" / "example_snapshot_week1.json").read_text(encoding="utf-8"))
+        s2 = json.loads((ROOT / "fixtures" / "example_snapshot_week2.json").read_text(encoding="utf-8"))
+        diff = diff_snapshots(s1, s2)
+        bundle = build_dashboard_bundle([s1, s2], diff)
+        self.assertEqual(bundle["health_summary"]["credit_health_index"], 89)
+        self.assertEqual(bundle["health_summary"]["credit_health_band"], "Good")
+        self.assertEqual(bundle["health_summary"]["credit_health_delta"], 5)
+        self.assertEqual(bundle["history"][0]["credit_health_index"], 84)
+        self.assertEqual(bundle["history"][1]["credit_health_index"], 89)
+        self.assertTrue(any(a["week"] == "2026-W47" for a in bundle["chart_annotations"]))
+        self.assertLessEqual(len(bundle["next_moves"]), 3)
+        self.assertGreaterEqual(len(bundle["next_moves"]), 1)
+        self.assertTrue(any("Harbor Premier" in a["title"] for a in bundle["consumer_alerts"]))
+        self.assertTrue(any("Was this you?" in a["detail"] for a in bundle["consumer_alerts"]))
+        tsx = render_canvas_tsx(bundle)
+        self.assertIn("Not a FICO score", tsx)
+        self.assertIn("Your Credit-Health Index", tsx)
+        self.assertIn("This week", tsx)
+        self.assertIn("Your next move", tsx)
+        self.assertIn("See all changes", tsx)
+        self.assertIn("Your three bureaus", tsx)
+        self.assertIn("See full report", tsx)
+        self.assertIn("New inquiry", tsx)
+        self.assertNotIn("000-00-0000", tsx)
+        self.assertNotIn("type ViewTab", tsx)
 
     def test_aes_gcm_vault_roundtrip(self):
         payload = {"week_label": "2026-W47", "accounts": [{"creditor": "SUMMIT BANK NA", "masked": "****1234"}]}

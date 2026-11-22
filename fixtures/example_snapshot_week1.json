@@ -474,6 +474,8 @@
     "collections_count": 0,
     "hard_inquiries_24m": 2,
     "public_records_count": 0,
-    "on_time_history_pct": 100.0
+    "on_time_history_pct": 100.0,
+    "credit_health_index": 84,
+    "credit_health_band": "Good"
   }
 }

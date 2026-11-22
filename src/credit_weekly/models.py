@@ -143,6 +143,74 @@ def new_snapshot(
     return snap
 
 
+
+def compute_credit_health_index(
+    utilization_pct: float,
+    on_time_history_pct: float,
+    adverse_accounts: int,
+    collections_count: int,
+    public_records_count: int,
+    hard_inquiries_24m: int,
+) -> int:
+    """Return a 0–100 Credit-Health Index from report facts. This is NOT a FICO score.
+
+    Weights (intentionally different from FICO): on-time payments 35, utilization 30,
+    derogatories 20, hard inquiries 15. The first two hard inquiries do not reduce the
+    inquiry component (aligned with a 2-in-6-months watch, not a FICO model).
+    """
+    payment = round((max(0.0, min(100.0, float(on_time_history_pct))) / 100.0) * 35)
+
+    u = float(utilization_pct)
+    if 1.0 <= u <= 9.0:
+        util_pts = 30
+    elif u <= 0.0:
+        util_pts = 27
+    elif u <= 20.0:
+        util_pts = round(30 - (u - 9.0) * (12.0 / 11.0))
+    elif u < 30.0:
+        util_pts = round(18 - (u - 20.0) * 1.0)
+    else:
+        util_pts = max(0, round(8 - (u - 30.0) * (8.0 / 70.0)))
+
+    derog = max(
+        0,
+        20
+        - 8 * max(0, int(adverse_accounts))
+        - 10 * max(0, int(collections_count))
+        - 12 * max(0, int(public_records_count)),
+    )
+    inq = max(0, 15 - 3 * max(0, int(hard_inquiries_24m) - 2))
+    return int(max(0, min(100, payment + util_pts + derog + inq)))
+
+
+def credit_health_band(index: int) -> str:
+    """One-word band label for the Credit-Health Index (not a FICO band)."""
+    n = int(index)
+    if n >= 90:
+        return "Excellent"
+    if n >= 80:
+        return "Good"
+    if n >= 70:
+        return "Fair"
+    if n >= 50:
+        return "Needs work"
+    return "At risk"
+
+
+def index_from_health_summary(hs: dict[str, Any]) -> int:
+    """Prefer a stored index; otherwise compute one from the summary fields."""
+    if hs.get("credit_health_index") is not None:
+        return int(hs["credit_health_index"])
+    return compute_credit_health_index(
+        utilization_pct=float(hs.get("utilization_pct", 0.0) or 0.0),
+        on_time_history_pct=float(hs.get("on_time_history_pct", 100.0) or 100.0),
+        adverse_accounts=int(hs.get("adverse_accounts", 0) or 0),
+        collections_count=int(hs.get("collections_count", 0) or 0),
+        public_records_count=int(hs.get("public_records_count", 0) or 0),
+        hard_inquiries_24m=int(hs.get("hard_inquiries_24m", 0) or 0),
+    )
+
+
 def compute_health_summary(bureaus: dict[str, dict[str, Any]]) -> dict[str, Any]:
     """Compute score-free report health metrics across available bureaus.
 
@@ -196,6 +264,14 @@ def compute_health_summary(bureaus: dict[str, dict[str, Any]]) -> dict[str, Any]
     util_pct = round((rev_bal / rev_lim) * 100, 1) if rev_lim > 0 else 0.0
     on_time_pct = round((on_time_ratings / total_ratings) * 100, 1) if total_ratings > 0 else 100.0
 
+    index = compute_credit_health_index(
+        utilization_pct=util_pct,
+        on_time_history_pct=on_time_pct,
+        adverse_accounts=adverse_accounts,
+        collections_count=len(all_collections),
+        public_records_count=public_records,
+        hard_inquiries_24m=hard_inquiries,
+    )
     return {
         "bureaus_present": present,
         "total_accounts": len(accounts_list),
@@ -208,4 +284,6 @@ def compute_health_summary(bureaus: dict[str, dict[str, Any]]) -> dict[str, Any]
         "hard_inquiries_24m": hard_inquiries,
         "public_records_count": public_records,
         "on_time_history_pct": on_time_pct,
+        "credit_health_index": index,
+        "credit_health_band": credit_health_band(index),
     }

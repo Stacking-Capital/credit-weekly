@@ -211,9 +211,12 @@ Use the dashboard Page template at `/workspace/credit-weekly/dashboard/ExampleDa
 - If `<store>/canvas_id.txt` exists, `WriteCanvas` that `canvas_id` (same persistent Page).
 - If not (first run), `WriteCanvas` a **new** private Page titled for this owner (not the public Blueprint), then save the new `canvas_id` only in their store.
 
-Layout contract:
-- **Top fold:** Historical trend graph — Credit-Health Index (NOT a FICO) + Utilization % on Stage 1 only; model-labeled bureau-direct scores once Stage 2 is on; labeled FICO Score 8 trio once Stage 3 is on. Plain-English key factors and the active Weekly Alerts feed.
-- **On-demand drill-down:** Bureau switcher (`All 3`, `Experian`, `Equifax`, `TransUnion`) and tabs (`Pay-By & Optimization`, `Tradelines`, `Inquiries`, `Collections & Public`, `Personal Info`, `Alert & Routine Toggles`).
+Layout contract (consumer page, not an analyst dump). Copy is short, warm, and plain. Use the kit's Hero-style index, Metrics or a custom index figure, LineChart, Segmented, Grid cards, Properties, Status pills, and a utilization band meter — all in the one kit look, `width="wide"`:
+- **Hero:** one big Credit-Health Index number, a one-word band (e.g. Good) as a Status pill, the week-over-week change, and a small "Not a FICO score" note. Under it, a history LineChart with a Segmented range (4 weeks / 12 weeks / All) and an annotation on any new-inquiry week. Once Stage 2 or 3 is on, keep this index and add model-labeled scores nearby — never present the index as a FICO.
+- **This week:** at most 3 plain-English alert cards (e.g. "New inquiry from Harbor Premier Bank on TransUnion. Was this you?"), each with a Status pill. Any further changes sit behind a "See all changes" Toggle.
+- **Your next move:** 1–3 action cards from the optimizer, with pay-by dates and amounts (e.g. "Pay $X on Summit card by Dec 3 to report under 9%"), plus a simple utilization band meter (0 / 1–9 / 10–20 / 21–29 / 30+) showing where they are.
+- **Three bureau tiles** in a Grid (Equifax / Experian / TransUnion): utilization, on-time %, inquiries, negatives, and last updated.
+- **See full report** (secondary, near the bottom, collapsed by default): a Segmented bureau switch and a clean account list. No accordion of raw tables, no personal-info dump.
 - Never put SSN, full DOB, passwords, or full account numbers on the Page. Never imitate a bureau's official UI. No `<form>` and no secret collection on the Page.
 
 ### Step 7: Create routines (if not already created)

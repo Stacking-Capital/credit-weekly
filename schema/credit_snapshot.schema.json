@@ -46,7 +46,9 @@
         "collections_count": { "type": "integer", "minimum": 0 },
         "hard_inquiries_24m": { "type": "integer", "minimum": 0 },
         "public_records_count": { "type": "integer", "minimum": 0 },
-        "on_time_history_pct": { "type": "number", "minimum": 0, "maximum": 100 }
+        "on_time_history_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "credit_health_index": { "type": "integer", "minimum": 0, "maximum": 100, "description": "0-100 Credit-Health Index computed from report facts. NOT a FICO score." },
+        "credit_health_band": { "type": "string", "description": "One-word band for the Credit-Health Index (not a FICO band)." }
       }
     }
   },

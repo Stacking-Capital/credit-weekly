@@ -1,668 +1,556 @@
 import {
-  Bars,
-  Callout,
-  Input,
+  Grid,
   LineChart,
-  Metrics,
   Page,
-  Rows,
+  Properties,
   Section,
   Segmented,
-  Select,
+  Status,
   Table,
   Text,
+  Toggle,
+  useGrokTheme,
   useMemo,
   useState,
 } from "grok/canvas";
 
-type BureauKey = "all" | "experian" | "equifax" | "transunion";
-type ViewTab = "overview" | "accounts" | "inquiries" | "derogatory" | "personal";
+type RangeKey = "4w" | "12w" | "all";
+type BureauKey = "equifax" | "experian" | "transunion";
+type StatusTone = "success" | "warning" | "danger" | "accent" | "neutral";
 
 const DATA = {
   "week_label": "2026-W47",
-  "captured_at": "2026-11-22T00:46:53.890193+00:00",
   "is_example_data": true,
   "health_summary": {
-    "utilization_pct": 7.9,
-    "on_time_history_pct": 100.0,
-    "open_accounts": 3,
-    "total_accounts": 3,
-    "revolving_balance_usd": "$1,350",
-    "revolving_limit_usd": "$17,000",
-    "adverse_accounts": 1,
-    "collections_count": 0,
-    "hard_inquiries_24m": 3,
-    "public_records_count": 0
+    "credit_health_index": 89,
+    "credit_health_band": "Good",
+    "credit_health_delta": 5,
+    "utilization_pct": 7.9
   },
   "history": [
     {
       "week": "2026-W46",
-      "utilization_pct": 16.7,
-      "revolving_balance_usd": 2500.0,
-      "adverse_accounts": 1
+      "credit_health_index": 84
     },
     {
       "week": "2026-W47",
-      "utilization_pct": 7.9,
-      "revolving_balance_usd": 1350.0,
-      "adverse_accounts": 1
+      "credit_health_index": 89
+    }
+  ],
+  "chart_annotations": [
+    {
+      "week": "2026-W47",
+      "label": "New inquiry"
+    }
+  ],
+  "utilization_meter": {
+    "pct": 7.9,
+    "band_id": "azeo",
+    "band_label": "1-9%",
+    "bands": [
+      {
+        "id": "zero",
+        "label": "0"
+      },
+      {
+        "id": "azeo",
+        "label": "1–9"
+      },
+      {
+        "id": "benchmark",
+        "label": "10–20"
+      },
+      {
+        "id": "ceiling",
+        "label": "21–29"
+      },
+      {
+        "id": "blocker",
+        "label": "30+"
+      }
+    ]
+  },
+  "consumer_alerts": [
+    {
+      "id": "new_hard_inquiry-HARBOR PREMIER BANK",
+      "title": "New inquiry from Harbor Premier Bank on TransUnion.",
+      "detail": "Was this you?",
+      "status": "Check",
+      "tone": "warning"
+    },
+    {
+      "id": "limit_change-SUMMIT BANK NA",
+      "title": "Summit Bank raised your limit to $12,000.",
+      "detail": "$10,000 to $12,000.",
+      "status": "Limit up",
+      "tone": "success"
+    },
+    {
+      "id": "balance_change-SUMMIT BANK NA",
+      "title": "You paid down Summit Bank by $900.",
+      "detail": "$1,850 to $950 (****1234).",
+      "status": "Paid down",
+      "tone": "success"
+    },
+    {
+      "id": "balance_change-CASCADIA AUTO FINANCE",
+      "title": "You paid down Cascadia Auto Finance by $350.",
+      "detail": "$11,400 to $11,050 (****9012).",
+      "status": "Paid down",
+      "tone": "success"
+    },
+    {
+      "id": "balance_change-NORTHSTAR CREDIT UNION",
+      "title": "You paid down Northstar Credit Union by $250.",
+      "detail": "$650 to $400 (****5678).",
+      "status": "Paid down",
+      "tone": "success"
+    }
+  ],
+  "next_moves": [
+    {
+      "title": "Pay $400 on Northstar Credit Union by Dec 8",
+      "detail": "That brings this card to $0 so only one card reports a small balance.",
+      "status": "Pay by date",
+      "tone": "accent"
+    },
+    {
+      "title": "Leave about $240 on Summit Bank by Dec 9",
+      "detail": "Keep this as the one card reporting in the 1–9% band.",
+      "status": "Keep a balance",
+      "tone": "success"
     }
   ],
   "bureaus": [
     {
       "bureau": "equifax",
       "label": "Equifax",
-      "report_date": "2026-11-16",
-      "confidence": 65,
-      "open_accounts": 2,
-      "total_accounts": 2,
       "utilization_pct": 7.9,
-      "revolving_balance_usd": "$1,350",
-      "revolving_limit_usd": "$17,000",
+      "on_time_pct": 100.0,
+      "hard_inquiries": 0,
       "adverse_count": 0,
-      "hard_inquiries": 0
+      "report_date_display": "Nov 16, 2026"
     },
     {
       "bureau": "experian",
       "label": "Experian",
-      "report_date": "2026-11-16",
-      "confidence": 65,
-      "open_accounts": 3,
-      "total_accounts": 3,
       "utilization_pct": 7.9,
-      "revolving_balance_usd": "$1,350",
-      "revolving_limit_usd": "$17,000",
+      "on_time_pct": 100.0,
+      "hard_inquiries": 1,
       "adverse_count": 3,
-      "hard_inquiries": 1
+      "report_date_display": "Nov 16, 2026"
     },
     {
       "bureau": "transunion",
       "label": "TransUnion",
-      "report_date": "2026-11-16",
-      "confidence": 100,
-      "open_accounts": 0,
-      "total_accounts": 3,
       "utilization_pct": 0.0,
-      "revolving_balance_usd": "$0",
-      "revolving_limit_usd": "$0",
+      "on_time_pct": 100.0,
+      "hard_inquiries": 2,
       "adverse_count": 0,
-      "hard_inquiries": 2
+      "report_date_display": "Nov 16, 2026"
     }
   ],
-  "alerts": [
-    {
-      "severity": "warning",
-      "bureau": "transunion",
-      "category": "new_hard_inquiry",
-      "title": "New hard inquiry on TransUnion: HARBOR PREMIER BANK",
-      "detail": "Date: 2026-11-14."
-    },
-    {
-      "severity": "info",
-      "bureau": "equifax",
-      "category": "balance_change",
-      "title": "Equifax: SUMMIT BANK NA balance decreased by $900",
-      "detail": "$1,850 -> $950 (****1234)."
-    },
-    {
-      "severity": "info",
-      "bureau": "equifax",
-      "category": "limit_change",
-      "title": "Equifax: SUMMIT BANK NA credit limit changed",
-      "detail": "$10,000 -> $12,000."
-    },
-    {
-      "severity": "info",
-      "bureau": "equifax",
-      "category": "balance_change",
-      "title": "Equifax: NORTHSTAR CREDIT UNION balance decreased by $250",
-      "detail": "$650 -> $400 (****5678)."
-    },
-    {
-      "severity": "info",
-      "bureau": "experian",
-      "category": "balance_change",
-      "title": "Experian: SUMMIT BANK NA balance decreased by $900",
-      "detail": "$1,850 -> $950 (****1234)."
-    },
-    {
-      "severity": "info",
-      "bureau": "experian",
-      "category": "limit_change",
-      "title": "Experian: SUMMIT BANK NA credit limit changed",
-      "detail": "$10,000 -> $12,000."
-    },
-    {
-      "severity": "info",
-      "bureau": "experian",
-      "category": "balance_change",
-      "title": "Experian: NORTHSTAR CREDIT UNION balance decreased by $250",
-      "detail": "$650 -> $400 (****5678)."
-    },
-    {
-      "severity": "info",
-      "bureau": "experian",
-      "category": "balance_change",
-      "title": "Experian: CASCADIA AUTO FINANCE balance decreased by $350",
-      "detail": "$11,400 -> $11,050 (****9012)."
-    },
-    {
-      "severity": "info",
-      "bureau": "transunion",
-      "category": "balance_change",
-      "title": "TransUnion: SUMMIT BANK NA balance decreased by $900",
-      "detail": "$1,850 -> $950 (****1234)."
-    },
-    {
-      "severity": "info",
-      "bureau": "transunion",
-      "category": "balance_change",
-      "title": "TransUnion: NORTHSTAR CREDIT UNION balance decreased by $250",
-      "detail": "$650 -> $400 (****5678)."
-    },
-    {
-      "severity": "info",
-      "bureau": "transunion",
-      "category": "balance_change",
-      "title": "TransUnion: CASCADIA AUTO FINANCE balance decreased by $350",
-      "detail": "$11,400 -> $11,050 (****9012)."
-    }
-  ],
-  "metric_deltas": {
-    "revolving_balance_delta_cents": -115000,
-    "revolving_limit_delta_cents": 200000,
-    "utilization_delta_pct": -8.8,
-    "adverse_delta": 0,
-    "collections_delta": 0,
-    "hard_inquiries_delta": 1
-  },
   "accounts": [
     {
       "bureau": "equifax",
-      "bureau_label": "Equifax",
-      "creditor": "SUMMIT BANK NA",
+      "creditor_display": "Summit Bank",
       "masked": "****1234",
-      "kind": "revolving",
-      "status": "Pays as Agreed",
-      "is_open": true,
-      "is_adverse": false,
       "balance": "$950",
-      "balance_cents": 95000,
       "limit": "$12,000",
-      "limit_cents": 1200000,
-      "util": "8%",
-      "opened": "2021-04-15",
-      "updated": "2026-11-12"
+      "util": "8%"
     },
     {
       "bureau": "equifax",
-      "bureau_label": "Equifax",
-      "creditor": "NORTHSTAR CREDIT UNION",
+      "creditor_display": "Northstar Credit Union",
       "masked": "****5678",
-      "kind": "revolving",
-      "status": "Pays as Agreed",
-      "is_open": true,
-      "is_adverse": false,
       "balance": "$400",
-      "balance_cents": 40000,
       "limit": "$5,000",
-      "limit_cents": 500000,
-      "util": "8%",
-      "opened": "2022-08-01",
-      "updated": "2026-11-11"
+      "util": "8%"
     },
     {
       "bureau": "experian",
-      "bureau_label": "Experian",
-      "creditor": "SUMMIT BANK NA",
+      "creditor_display": "Summit Bank",
       "masked": "****1234",
-      "kind": "revolving",
-      "status": "Open / Never Late",
-      "is_open": true,
-      "is_adverse": true,
       "balance": "$950",
-      "balance_cents": 95000,
       "limit": "$12,000",
-      "limit_cents": 1200000,
-      "util": "8%",
-      "opened": "2021-04-15",
-      "updated": "2026-11-12"
+      "util": "8%"
     },
     {
       "bureau": "experian",
-      "bureau_label": "Experian",
-      "creditor": "NORTHSTAR CREDIT UNION",
+      "creditor_display": "Northstar Credit Union",
       "masked": "****5678",
-      "kind": "revolving",
-      "status": "Open / Never Late",
-      "is_open": true,
-      "is_adverse": true,
       "balance": "$400",
-      "balance_cents": 40000,
       "limit": "$5,000",
-      "limit_cents": 500000,
-      "util": "8%",
-      "opened": "2022-08-01",
-      "updated": "2026-11-11"
+      "util": "8%"
     },
     {
       "bureau": "experian",
-      "bureau_label": "Experian",
-      "creditor": "CASCADIA AUTO FINANCE",
+      "creditor_display": "Cascadia Auto Finance",
       "masked": "****9012",
-      "kind": "installment",
-      "status": "Open / Never Late",
-      "is_open": true,
-      "is_adverse": true,
       "balance": "$11,050",
-      "balance_cents": 1105000,
       "limit": "—",
-      "limit_cents": 0,
-      "util": "—",
-      "opened": "2024-02-10",
-      "updated": "2026-11-10"
+      "util": "—"
     },
     {
       "bureau": "transunion",
-      "bureau_label": "TransUnion",
-      "creditor": "SUMMIT BANK NA",
+      "creditor_display": "Summit Bank",
       "masked": "****1234",
-      "kind": "revolving",
-      "status": "Paid or Paying as Agreed",
-      "is_open": false,
-      "is_adverse": false,
       "balance": "$950",
-      "balance_cents": 95000,
       "limit": "$10,000",
-      "limit_cents": 1000000,
-      "util": "10%",
-      "opened": "2021-04-15",
-      "updated": "2026-11-12"
+      "util": "10%"
     },
     {
       "bureau": "transunion",
-      "bureau_label": "TransUnion",
-      "creditor": "NORTHSTAR CREDIT UNION",
+      "creditor_display": "Northstar Credit Union",
       "masked": "****5678",
-      "kind": "revolving",
-      "status": "Paid or Paying as Agreed",
-      "is_open": false,
-      "is_adverse": false,
       "balance": "$400",
-      "balance_cents": 40000,
       "limit": "$5,000",
-      "limit_cents": 500000,
-      "util": "8%",
-      "opened": "2022-08-01",
-      "updated": "2026-11-11"
+      "util": "8%"
     },
     {
       "bureau": "transunion",
-      "bureau_label": "TransUnion",
-      "creditor": "CASCADIA AUTO FINANCE",
+      "creditor_display": "Cascadia Auto Finance",
       "masked": "****9012",
-      "kind": "installment",
-      "status": "Paid or Paying as Agreed",
-      "is_open": false,
-      "is_adverse": false,
       "balance": "$11,050",
-      "balance_cents": 1105000,
       "limit": "—",
-      "limit_cents": 0,
-      "util": "—",
-      "opened": "2024-02-10",
-      "updated": "2026-11-10"
-    }
-  ],
-  "collections": [],
-  "inquiries": [
-    {
-      "bureau": "experian",
-      "bureau_label": "Experian",
-      "creditor": "HARBOR MORTGAGE PREQUAL",
-      "date": "2026-04-02",
-      "kind": "hard",
-      "purpose": ""
-    },
-    {
-      "bureau": "transunion",
-      "bureau_label": "TransUnion",
-      "creditor": "NORTHSTAR CREDIT UNION",
-      "date": "2026-06-12",
-      "kind": "hard",
-      "purpose": "Credit Application"
-    },
-    {
-      "bureau": "transunion",
-      "bureau_label": "TransUnion",
-      "creditor": "HARBOR PREMIER BANK",
-      "date": "2026-11-14",
-      "kind": "hard",
-      "purpose": "Credit Card Application"
-    },
-    {
-      "bureau": "transunion",
-      "bureau_label": "TransUnion",
-      "creditor": "EXAMPLE CARD OFFERS LLC",
-      "date": "2026-10-20",
-      "kind": "promotional",
-      "purpose": "Promotional"
-    }
-  ],
-  "public_records": [],
-  "personal_info": [
-    {
-      "bureau": "equifax",
-      "bureau_label": "Equifax",
-      "names": "Jordan Example",
-      "ssn_last4": "***-**-0000",
-      "dob_year": "1990",
-      "addresses": "100 Maple Ave, Austin, TX 78701",
-      "employers": "—"
-    },
-    {
-      "bureau": "experian",
-      "bureau_label": "Experian",
-      "names": "Jordan Example",
-      "ssn_last4": "***-**-0000",
-      "dob_year": "1990",
-      "addresses": "100 Maple Ave, Austin, TX 78701",
-      "employers": "—"
-    },
-    {
-      "bureau": "transunion",
-      "bureau_label": "TransUnion",
-      "names": "Jordan Example",
-      "ssn_last4": "***-**-0000",
-      "dob_year": "1990",
-      "addresses": "100 Maple Ave, Austin, TX 78701",
-      "employers": "ACME EXAMPLE CORP"
+      "util": "—"
     }
   ]
-} as const;
+} as {
+  week_label: string;
+  is_example_data: boolean;
+  health_summary: {
+    credit_health_index: number;
+    credit_health_band: string;
+    credit_health_delta: number | null;
+    utilization_pct: number;
+  };
+  history: Array<{
+    week: string;
+    credit_health_index: number;
+  }>;
+  chart_annotations: Array<{ week: string; label: string }>;
+  utilization_meter: {
+    pct: number;
+    band_id: string;
+    band_label: string;
+    bands: Array<{ id: string; label: string }>;
+  };
+  consumer_alerts: Array<{
+    id: string;
+    title: string;
+    detail: string;
+    status: string;
+    tone: StatusTone;
+  }>;
+  next_moves: Array<{
+    title: string;
+    detail: string;
+    status: string;
+    tone: StatusTone;
+  }>;
+  bureaus: Array<{
+    bureau: BureauKey;
+    label: string;
+    utilization_pct: number;
+    on_time_pct: number;
+    hard_inquiries: number;
+    adverse_count: number;
+    report_date_display: string;
+  }>;
+  accounts: Array<{
+    bureau: BureauKey;
+    creditor_display: string;
+    masked: string;
+    balance: string;
+    limit: string;
+    util: string;
+  }>;
+};
+
+function weekLabel(week: string): string {
+  const m = week.match(/W(\d+)$/i);
+  return m ? `W${m[1]}` : week;
+}
+
+function bandTone(band: string): StatusTone {
+  if (band === "Excellent" || band === "Good") return "success";
+  if (band === "Fair") return "accent";
+  if (band === "Needs work") return "warning";
+  return "danger";
+}
+
+function IndexHero({
+  value,
+  delta,
+}: {
+  value: number;
+  delta: number | null;
+}) {
+  const theme = useGrokTheme();
+  const deltaText =
+    delta === null
+      ? "First week on file"
+      : delta === 0
+        ? "No change from last week"
+        : delta > 0
+          ? `Up ${delta} from last week`
+          : `Down ${Math.abs(delta)} from last week`;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "baseline",
+        gap: 20,
+      }}
+    >
+      <div
+        style={{
+          ...theme.font.heading1,
+          fontSize: 64,
+          lineHeight: "72px",
+          letterSpacing: "-0.03em",
+          color: theme.text.primary,
+        }}
+      >
+        {value}
+      </div>
+      <div>
+        <div style={{ ...theme.font.subtext, color: theme.text.secondary }}>
+          {deltaText}
+        </div>
+        <div style={{ ...theme.font.caption, color: theme.text.tertiary, marginTop: 4 }}>
+          Not a FICO score
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UtilizationMeter({ pct, bandId }: { pct: number; bandId: string }) {
+  const theme = useGrokTheme();
+  const bands = DATA.utilization_meter.bands;
+  const W = 640;
+  const H = 56;
+  const padX = 4;
+  const gap = 6;
+  const trackY = 8;
+  const trackH = 14;
+  const n = bands.length;
+  const segW = (W - padX * 2 - gap * (n - 1)) / n;
+  const active = Math.max(0, bands.findIndex((b) => b.id === bandId));
+  const markerX = padX + active * (segW + gap) + segW / 2;
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      width="100%"
+      role="img"
+      aria-label={`Utilization ${pct}% in the ${DATA.utilization_meter.band_label} band`}
+    >
+      {bands.map((b, i) => {
+        const x = padX + i * (segW + gap);
+        const on = b.id === bandId;
+        return (
+          <g key={b.id}>
+            <rect
+              x={x}
+              y={trackY}
+              width={segW}
+              height={trackH}
+              rx={7}
+              fill={on ? theme.dataviz.categorical[0] : theme.fill.secondary}
+            />
+            <text
+              x={x + segW / 2}
+              y={trackY + trackH + 16}
+              textAnchor="middle"
+              fill={theme.text.tertiary}
+              fontFamily={theme.font.family}
+              fontSize={12}
+            >
+              {b.label}
+            </text>
+          </g>
+        );
+      })}
+      <polygon
+        points={`${markerX},${trackY - 5} ${markerX - 6},${trackY - 13} ${markerX + 6},${trackY - 13}`}
+        fill={theme.dataviz.categorical[0]}
+      />
+    </svg>
+  );
+}
 
 export default function App() {
-  const [bureau, setBureau] = useState<BureauKey>("all");
-  const [tab, setTab] = useState<ViewTab>("overview");
-  const [query, setQuery] = useState<string>("");
-  const [kindFilter, setKindFilter] = useState<string>("all");
+  const [range, setRange] = useState<RangeKey>("all");
+  const [showAllChanges, setShowAllChanges] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const defaultBureau = (DATA.bureaus[1]?.bureau ?? DATA.bureaus[0]?.bureau ?? "experian") as BureauKey;
+  const [reportBureau, setReportBureau] = useState<BureauKey>(defaultBureau);
 
   const hs = DATA.health_summary;
-  const utilTone =
-    hs.utilization_pct <= 10 ? "success" : hs.utilization_pct <= 30 ? "warning" : "danger";
-  const advTone =
-    hs.adverse_accounts + hs.collections_count === 0 ? "success" : "danger";
+  const featuredAlerts = DATA.consumer_alerts.slice(0, 3);
+  const extraAlerts = DATA.consumer_alerts.slice(3);
+  const visibleAlerts = showAllChanges ? DATA.consumer_alerts : featuredAlerts;
 
-  const filteredAccounts = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return DATA.accounts.filter((a) => {
-      if (bureau !== "all" && a.bureau !== bureau) return false;
-      if (kindFilter !== "all" && a.kind !== kindFilter) return false;
-      if (q && !a.creditor.toLowerCase().includes(q) && !a.status.toLowerCase().includes(q)) {
-        return false;
-      }
-      return true;
+  const series = useMemo(() => {
+    const pts = DATA.history.map((h) => ({
+      label: weekLabel(h.week),
+      value: h.credit_health_index,
+      week: h.week,
+    }));
+    const n = range === "4w" ? 4 : range === "12w" ? 12 : pts.length;
+    return pts.slice(-Math.max(n, 1));
+  }, [range]);
+
+  const annotations = useMemo(() => {
+    return DATA.chart_annotations.flatMap((a) => {
+      const at = series.findIndex((p) => p.week === a.week);
+      if (at < 0) return [];
+      return [{ at, label: a.label, line: 0 as const }];
     });
-  }, [bureau, kindFilter, query]);
+  }, [series]);
 
-  const filteredInquiries = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return DATA.inquiries.filter((iq) => {
-      if (bureau !== "all" && iq.bureau !== bureau) return false;
-      if (q && !iq.creditor.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [bureau, query]);
-
-  const filteredCollections = useMemo(() => {
-    return DATA.collections.filter((c) => bureau === "all" || c.bureau === bureau);
-  }, [bureau]);
-
-  const filteredPublic = useMemo(() => {
-    return DATA.public_records.filter((p) => bureau === "all" || p.bureau === bureau);
-  }, [bureau]);
-
-  const filteredPersonal = useMemo(() => {
-    return DATA.personal_info.filter((p) => bureau === "all" || p.bureau === bureau);
-  }, [bureau]);
-
-  const utilPoints = DATA.history.map((h) => ({
-    label: h.week,
-    value: h.utilization_pct,
-  }));
-
-  const bureauBars = DATA.bureaus.map((b) => ({
-    label: b.label,
-    value: b.utilization_pct,
-    display: `${b.utilization_pct}%`,
-    meta: `${b.revolving_balance_usd} / ${b.revolving_limit_usd}`,
-  }));
+  const reportAccounts = DATA.accounts.filter((a) => a.bureau === reportBureau);
+  const bureauOptions = DATA.bureaus.map((b) => ({ value: b.bureau, label: b.label }));
 
   return (
     <Page
-      title={`3-Bureau Credit Monitor — ${DATA.week_label}`}
-      summary="Weekly AnnualCreditReport.com snapshot across Equifax, Experian, and TransUnion. Score-free report health, utilization, and week-over-week change alerts."
+      title={"Credit Weekly: Example Dashboard (Jordan Example)"}
+      summary={"A simple weekly look at Jordan Example\u2019s reports. The Credit-Health Index is not a FICO score."}
       width="wide"
     >
-      <Metrics
-        metrics={[
-          {
-            value: `${hs.utilization_pct}%`,
-            label: "Revolving Utilization",
-            detail: `${hs.revolving_balance_usd} of ${hs.revolving_limit_usd}`,
-            tone: utilTone,
-          },
-          {
-            value: `${hs.on_time_history_pct}%`,
-            label: "On-Time Payments",
-            detail: `${hs.open_accounts} open / ${hs.total_accounts} total`,
-            tone: hs.on_time_history_pct >= 99 ? "success" : "warning",
-          },
-          {
-            value: `${hs.hard_inquiries_24m}`,
-            label: "Hard Inquiries",
-            detail: "Across loaded bureaus",
-          },
-          {
-            value: `${hs.adverse_accounts + hs.collections_count}`,
-            label: "Adverse & Collections",
-            detail: `${hs.collections_count} collections · ${hs.public_records_count} public`,
-            tone: advTone,
-          },
-        ]}
-      />
-
-      <Section heading="Scope & View">
-        <Segmented<BureauKey>
-          options={[
-            { value: "all", label: "All 3 Bureaus" },
-            { value: "experian", label: "Experian" },
-            { value: "equifax", label: "Equifax" },
-            { value: "transunion", label: "TransUnion" },
-          ]}
-          value={bureau}
-          onChange={(v: BureauKey) => setBureau(v)}
+      <Section heading="Your Credit-Health Index">
+        <IndexHero
+          value={hs.credit_health_index}
+          delta={hs.credit_health_delta}
         />
-        <Segmented<ViewTab>
+        <Status tone={bandTone(hs.credit_health_band)}>{hs.credit_health_band}</Status>
+        <Segmented
+          value={range}
+          onChange={setRange}
           options={[
-            { value: "overview", label: "Overview & Alerts", count: DATA.alerts.length },
-            { value: "accounts", label: "Accounts", count: filteredAccounts.length },
-            { value: "inquiries", label: "Inquiries", count: filteredInquiries.length },
-            { value: "derogatory", label: "Collections & Public", count: filteredCollections.length + filteredPublic.length },
-            { value: "personal", label: "Personal Info", count: filteredPersonal.length },
+            { value: "4w", label: "4 weeks" },
+            { value: "12w", label: "12 weeks" },
+            { value: "all", label: "All" },
           ]}
-          value={tab}
-          onChange={(v: ViewTab) => setTab(v)}
+        />
+        <LineChart
+          points={series.map((p) => ({ label: p.label, value: p.value }))}
+          floor={0}
+          ceiling={100}
+          labels={["Credit-Health Index"]}
+          annotations={annotations}
         />
       </Section>
 
-      {tab === "overview" && (
-        <>
-          {DATA.alerts.length > 0 && (
-            <Section heading="What Changed This Week" caption="Week-over-week structural diff across bureaus">
-              <Rows
-                rows={DATA.alerts.map((al) => ({
-                  title: al.title,
-                  detail: al.detail,
-                  status: {
-                    label: al.severity.toUpperCase(),
-                    tone: al.severity === "critical" ? "danger" : al.severity === "warning" ? "warning" : "success",
-                  },
-                }))}
-              />
-            </Section>
-          )}
-
-          {bureauBars.length > 0 && (
-            <Section heading="Utilization by Bureau" caption="Revolving balance divided by total revolving limit per bureau">
-              <Bars bars={bureauBars} />
-            </Section>
-          )}
-
-          {utilPoints.length > 1 && (
-            <Section heading="Weekly Utilization Trend">
-              <LineChart
-                points={utilPoints}
-                ceiling={Math.max(40, ...utilPoints.map((p) => p.value + 5))}
-                floor={0}
-                unit="%"
-                labels={["Utilization %"]}
-              />
-            </Section>
-          )}
-
-          <Section heading="Bureau Snapshot Status">
-            <Table
-              columns={["Bureau", "Report Date", "Open / Total", "Utilization", "Adverse", "Hard Inq", "Parse Confidence"]}
-              align={["start", "start", "end", "end", "end", "end", "end"]}
-              rows={DATA.bureaus.map((b) => [
-                b.label,
-                b.report_date || "—",
-                `${b.open_accounts} / ${b.total_accounts}`,
-                `${b.utilization_pct}%`,
-                { text: `${b.adverse_count}`, tone: b.adverse_count > 0 ? "danger" : "success" },
-                `${b.hard_inquiries}`,
-                `${b.confidence}%`,
-              ])}
+      <Section
+        heading="This week"
+        caption={DATA.consumer_alerts.length === 0 ? "Nothing new to review." : undefined}
+        actions={
+          extraAlerts.length > 0 ? (
+            <Toggle
+              label="See all changes"
+              value={showAllChanges}
+              onChange={setShowAllChanges}
             />
+          ) : undefined
+        }
+      >
+        {visibleAlerts.length === 0 ? (
+          <Text>Quiet week. No new inquiries, late marks, or surprises.</Text>
+        ) : visibleAlerts.length === 1 ? (
+          <Section heading={visibleAlerts[0].title}>
+            <Status tone={visibleAlerts[0].tone}>{visibleAlerts[0].status}</Status>
+            <Text>{visibleAlerts[0].detail}</Text>
           </Section>
-        </>
-      )}
+        ) : (
+          <Grid columns={visibleAlerts.length === 2 ? 2 : 3}>
+            {visibleAlerts.map((a) => (
+              <Section heading={a.title} key={a.id}>
+                <Status tone={a.tone}>{a.status}</Status>
+                <Text>{a.detail}</Text>
+              </Section>
+            ))}
+          </Grid>
+        )}
+      </Section>
 
-      {tab === "accounts" && (
-        <Section heading="Tradelines & Balances">
-          <Input
-            label="Filter creditor or status"
-            value={query}
-            onChange={(val: string) => setQuery(val)}
-            placeholder="Search bank, card, status..."
-          />
-          <Select<string>
-            label="Account Type"
-            value={kindFilter}
-            onChange={(val: string) => setKindFilter(val)}
-            options={[
-              { value: "all", label: "All Types" },
-              { value: "revolving", label: "Revolving" },
-              { value: "installment", label: "Installment" },
-              { value: "mortgage", label: "Mortgage" },
-            ]}
-          />
-          {filteredAccounts.length > 0 && (
+      <Section
+        heading="Your next move"
+        caption={`Overall utilization is ${hs.utilization_pct}% · ${DATA.utilization_meter.band_label}`}
+      >
+        {DATA.next_moves.length === 0 ? (
+          <Text>You're in good shape. Keep paying on time and stay in this band.</Text>
+        ) : DATA.next_moves.length === 1 ? (
+          <Section heading={DATA.next_moves[0].title}>
+            <Status tone={DATA.next_moves[0].tone}>{DATA.next_moves[0].status}</Status>
+            <Text>{DATA.next_moves[0].detail}</Text>
+          </Section>
+        ) : (
+          <Grid columns={DATA.next_moves.length === 2 ? 2 : 3}>
+            {DATA.next_moves.map((m) => (
+              <Section heading={m.title} key={m.title}>
+                <Status tone={m.tone}>{m.status}</Status>
+                <Text>{m.detail}</Text>
+              </Section>
+            ))}
+          </Grid>
+        )}
+        <UtilizationMeter pct={DATA.utilization_meter.pct} bandId={DATA.utilization_meter.band_id} />
+      </Section>
+
+      <Section heading="Your three bureaus">
+        <Grid columns={3}>
+          {DATA.bureaus.map((b) => (
+            <Section heading={b.label} key={b.bureau}>
+              <Properties
+                items={[
+                  { label: "Utilization", value: `${b.utilization_pct}%` },
+                  { label: "On-time", value: `${b.on_time_pct}%` },
+                  { label: "Inquiries", value: String(b.hard_inquiries) },
+                  {
+                    label: "Negatives",
+                    value:
+                      b.adverse_count === 0 ? (
+                        <Status tone="success">None</Status>
+                      ) : (
+                        <Status tone="warning">{String(b.adverse_count)}</Status>
+                      ),
+                  },
+                  { label: "Updated", value: b.report_date_display },
+                ]}
+              />
+            </Section>
+          ))}
+        </Grid>
+      </Section>
+
+      <Section
+        heading="See full report"
+        caption="A simple list of the accounts on file."
+        actions={
+          <Toggle label="Show accounts" value={showReport} onChange={setShowReport} />
+        }
+      >
+        {showReport ? (
+          <>
+            <Segmented value={reportBureau} onChange={setReportBureau} options={bureauOptions} />
             <Table
-              columns={["Bureau", "Creditor", "Acct", "Type", "Status", "Balance", "Limit", "Util"]}
-              align={["start", "start", "start", "start", "start", "end", "end", "end"]}
-              rows={filteredAccounts.map((a) => [
-                a.bureau_label,
-                a.creditor,
-                a.masked,
-                a.kind,
-                { text: a.status, tone: a.is_adverse ? "danger" : "success" },
+              columns={["Account", "Balance", "Limit", "Use"]}
+              rows={reportAccounts.map((a) => [
+                `${a.creditor_display} ${a.masked}`,
                 a.balance,
                 a.limit,
                 a.util,
               ])}
             />
-          )}
-        </Section>
-      )}
-
-      {tab === "inquiries" && filteredInquiries.length > 0 && (
-        <Section heading="Credit Inquiries" caption="Hard inquiries affect credit decisions; promotional/account review are soft">
-          <Input
-            label="Filter inquiry"
-            value={query}
-            onChange={(val: string) => setQuery(val)}
-            placeholder="Search creditor..."
-          />
-          <Table
-            columns={["Bureau", "Creditor", "Date", "Type", "Permissible Purpose"]}
-            rows={filteredInquiries.map((q) => [
-              q.bureau_label,
-              q.creditor,
-              q.date,
-              { text: q.kind, tone: q.kind === "hard" ? "warning" : "success" },
-              q.purpose || "—",
-            ])}
-          />
-        </Section>
-      )}
-
-      {tab === "derogatory" && (
-        <>
-          {filteredCollections.length > 0 && (
-            <Section heading="Collections">
-              <Table
-                columns={["Bureau", "Agency", "Acct", "Original Creditor", "Balance", "Status", "DOFD"]}
-                align={["start", "start", "start", "start", "end", "start", "start"]}
-                rows={filteredCollections.map((c) => [
-                  c.bureau_label,
-                  c.creditor,
-                  c.masked,
-                  c.original_creditor,
-                  c.balance,
-                  { text: c.status, tone: "danger" },
-                  c.dofd,
-                ])}
-              />
-            </Section>
-          )}
-          {filteredPublic.length > 0 && (
-            <Section heading="Public Records">
-              <Table
-                columns={["Bureau", "Type", "Filed", "Status"]}
-                rows={filteredPublic.map((p) => [
-                  p.bureau_label,
-                  p.kind,
-                  p.filed_date,
-                  { text: p.status, tone: "danger" },
-                ])}
-              />
-            </Section>
-          )}
-          {filteredCollections.length === 0 && filteredPublic.length === 0 && (
-            <Callout tone="success" lead="Clean derogatory check">
-              Zero collections or public records appear in the selected bureau scope for ${DATA.week_label}.
-            </Callout>
-          )}
-        </>
-      )}
-
-      {tab === "personal" && filteredPersonal.length > 0 && (
-        <Section heading="Personal Information (PII-Minimized)">
-          <Table
-            columns={["Bureau", "Names", "SSN (Masked)", "Birth Year", "Addresses", "Employers"]}
-            rows={filteredPersonal.map((p) => [
-              p.bureau_label,
-              p.names,
-              p.ssn_last4,
-              p.dob_year,
-              p.addresses,
-              p.employers,
-            ])}
-          />
-        </Section>
-      )}
+          </>
+        ) : (
+          <Text>Turn this on when you want to look at every account on one bureau.</Text>
+        )}
+      </Section>
     </Page>
   );
 }
