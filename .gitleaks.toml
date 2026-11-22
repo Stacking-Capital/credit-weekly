@@ -1,0 +1,13 @@
+# Allow only documented synthetic test strings. Real secrets must still fail the scan.
+title = "credit-weekly"
+
+[allowlist]
+description = "Synthetic Jordan Example fixtures and the documented unit-test passphrase"
+paths = [
+  '''(^|/)fixtures/''',
+]
+regexes = [
+  '''correct-horse-battery-staple''',
+  # Used only as a mask() input in unit tests, never as a live identifier.
+  '''123-45-6789''',
+]
