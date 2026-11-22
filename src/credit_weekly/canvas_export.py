@@ -7,6 +7,31 @@ import re
 from datetime import date
 from typing import Any
 
+_CANVAS_FORBIDDEN = (
+    re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),  # SSN, including synthetic 000-00-0000
+    re.compile(r"\b(?:\d[ -]*?){13,19}\b"),  # raw card-like numbers
+    re.compile(r"BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY"),
+    re.compile(r"(?i)passphrase\s*[:=]"),
+)
+
+def assert_canvas_safe(text: str) -> None:
+    """Raise ValueError if a Page or bundle string would leak secrets or raw PII."""
+    if "000-00-0000" in text or re.search(r"\b\d{3}-\d{2}-\d{4}\b", text):
+        raise ValueError("Canvas output must not include a Social Security number.")
+    if re.search(r"(?i)passphrase\s*[:=]", text):
+        raise ValueError("Canvas output must not include a passphrase.")
+    if "BEGIN " in text and "PRIVATE KEY" in text:
+        raise ValueError("Canvas output must not include a private key.")
+    # Full account numbers are digits only; masked last-4 (****1234) is allowed.
+    if re.search(r"(?<!\*)\b\d{13,19}\b", text):
+        raise ValueError("Canvas output must not include a full account number.")
+    lowered = text.lower()
+    for needle in ("100 maple", "password=", "otp="):
+        if needle in lowered:
+            raise ValueError("Canvas output must not include secrets or street addresses.")
+
+
+
 from .models import ADVERSE_RATINGS, BUREAUS, BUREAU_LABELS, compute_health_summary, credit_health_band
 from .optimizer import classify_utilization_band, optimize_snapshot
 
@@ -928,8 +953,10 @@ def render_canvas_tsx(bundle: dict[str, Any]) -> str:
         week = bundle.get("week_label") or "this week"
         title = f"Credit Weekly · {week}"
         summary = "A simple weekly look at your reports. The Credit-Health Index is not a FICO score."
-    return (
+    source = (
         TSX_TEMPLATE.replace("__DATA_JSON__", data_json)
         .replace("__PAGE_TITLE__", json.dumps(title))
         .replace("__PAGE_SUMMARY__", json.dumps(summary))
     )
+    assert_canvas_safe(source)
+    return source
