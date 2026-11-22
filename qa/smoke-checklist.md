@@ -1,22 +1,36 @@
 # Credit Weekly smoke checklist
 
-Short checklist of the critical flows a real user takes. Use it on every pull request that touches a listed flow. This is educational self-monitoring software, not credit repair.
+Run these flows against a change like a real person would. A walkthrough-dependent step is a **GAP**, not a pass. Do not invent AnnualCreditReport or bureau click-paths.
 
-**HARD LOCKs:** example or synthetic data only in public artifacts; never call the Credit-Health Index a FICO score; never promise a specific point gain; never put secrets, a full SSN, or a full account number in the repo, logs, or a Grok Page; never collect SSN, DOB, passwords, or OTP in chat.
+## 1. Onboarding
+- Start from `bot-template/getting-started-SKILL.md`.
+- Pass: the opening explains Stage 1, the private Page that updates in place, and that identity never goes through chat. Questions are asked one at a time. No SSN, DOB, passwords, or OTP in chat.
+- GAP: official template publishing and the first live "Add to Grok Bot" path still need Patrick.
 
-Walkthrough-dependent steps are marked **GAP**. Do not invent bureau or AnnualCreditReport.com click-paths. Leave every `TO CONFIRM IN PATRICK'S RECORDED WALKTHROUGH` / `TO CONFIRM LIVE` line in the skills as-is until a recorded walkthrough exists.
+## 2. Secure-form identity entry
+- Pass: the skill tells the bot to open a Secure Form (`RequestUserForm`) for identity, login, or OTP, and never to read those values back into chat.
+- GAP: a live form fill against AnnualCreditReport.com or a bureau waits on Patrick's recorded walkthrough. Leave every `TO CONFIRM IN PATRICK'S RECORDED WALKTHROUGH` line as-is.
 
-| # | Flow | Start | What to do | Pass looks like | Status |
-|---|---|---|---|---|---|
-| 1 | Onboarding | `bot-template/getting-started-SKILL.md` in a new Grok Bot | Ask the setup questions, explain the three stages, and point at the public clone URL. Do not publish or copy the official template (that step waits on Patrick). | The owner can state which stages they want, where alerts go, and how to clone `https://github.com/Stacking-Capital/credit-weekly.git`. No SSN, DOB, password, or OTP is requested in chat. | **GAP** — official template publishing waits on Patrick. Skill install in a live bot also waits on that. |
-| 2 | Secure-form identity entry | First ACR or bureau-account run, when a site asks for identity, a password, or an OTP | Offer a write-only Secure Form (`RequestUserForm`). Drive the browser on the owner's registered computer. Values must never be typed into chat or onto a Grok Page. | The form is write-only; chat and the Page show no secrets; the browser is filled by the bot, not by sending the owner to a bureau site to self-serve. | **GAP** — exact form fields, selectors, and site steps are `TO CONFIRM IN PATRICK'S RECORDED WALKTHROUGH`. Do not invent a click-path. |
-| 3 | Weekly 3-bureau pull | Stage 1 skill after onboarding, or the weekly routine | Parse a new Equifax, Experian, and TransUnion disclosure (or the synthetic Jordan Example fixtures in CI). Diff against the prior week, encrypt the snapshot, and run the optimizer. Prefer Vault logins and a remembered device when a walkthrough has confirmed that path. | A new `CreditSnapshot` 1.0.0 exists; the vault file is AES-256-GCM; the diff lists real changes; no plaintext snapshot or passphrase is printed to logs. | **GAP** for live bureau sites (walkthrough not recorded). **Runnable now** against `fixtures/example_snapshot_week1.json` and `week2` via `python -m unittest` and `python -m credit_weekly.cli demo`. |
-| 4 | Dashboard render | `dashboard/ExampleDashboard.canvas.tsx` (Stage 1) or `dashboard/DreamStateDashboard.canvas.tsx` (dream state), or a private owner Page | Export a PII-scrubbed bundle and render the consumer Page: hero, history chart, at most three "This week" cards, next-move cards, bureau tiles, collapsed full report. | Stage 1 shows a Credit-Health Index labeled **Not a FICO score**. Dream state labels FICO Score 8 only where a free FICO 8 source is connected. No SSN, full DOB, passwords, or full account numbers appear in the Page source. Example Pages stay marked as example data. | **Runnable now** on the example Pages and `credit_weekly.cli demo`. Do not overwrite the Blueprint Page (`1efc1c3f-a5c5-4ed8-9edc-1e45c4ea07e4`). Live owner Pages wait on bot setup. |
-| 5 | Alerts | After a weekly parse/diff | Fire only the alerts that changed: new inquiry or account, utilization band crossing, health-index or labeled score change, negative item, pay-by window. | Copy is plain English. A Credit-Health Index change is not called a FICO change. No promised point gain. No alert is sent when nothing changed. | **Runnable now** on the Jordan Example week-1→week-2 diff (new Harbor Premier Bank inquiry, paydowns). Channel delivery in a live bot waits on onboarding. |
-| 6 | Export | After a successful parse | Write the PII-scrubbed dashboard bundle and, when requested, the versioned `credit-weekly-export` 1.0.0 pack for later import into the separate 700.credit platform. | `dashboard/example_bundle.json` (or an owner bundle) has no full SSN or full account number. The export contract in `schema/EXPORT_FOR_700_CREDIT.md` is unchanged in meaning. This repo is not a 700.credit front door. | **Runnable now** via `credit_weekly.cli export-dashboard` and `demo`. |
+## 3. Weekly pull
+- Pass: parse, diff, optimize, and encrypt run locally on the Jordan Example fixtures with no network calls.
+- GAP: live site steps for ACR and bureau accounts wait on the walkthrough.
 
-## How to run this list
+## 4. Dashboard render
+- Pass: `credit_weekly.cli export-dashboard` (or the example Pages) shows a Credit-Health Index labeled "Not a FICO score", a "What to do this week" focus, 12-week history with paydown and new-inquiry marks on the example Page, bureau tiles, and a collapsed full report. Example Pages carry a visible example-data label. Dream-state scores are labeled with model and bureau. No promised point gains. No SSN or full account numbers.
+- Desktop 1440 and mobile 375: the hero, chart, and next-move copy stay readable; rows wrap; no horizontal clip of controls.
+- GAP: rendering a real owner's first private Page waits on template publishing.
 
-- For code changes: run `python -m unittest discover -s tests -v` and, when CI is present, confirm the GitHub Actions tests and gitleaks jobs are green.
-- For user-visible Page changes: open the example or preview Page at desktop (1440) and phone (375) width and check the dashboard-render line above, including the "Not a FICO score" label on Stage 1.
-- Never mark a **GAP** line as a pass. Record it as a gap until the walkthrough or template publishing unblocks it.
+## 5. Same-Page weekly update
+- Pass: the skill says to `WriteCanvas` the `canvas_id` in `<store>/canvas_id.txt` so the url does not change; it never overwrites the Blueprint or public example Pages; `page_state` is `ready` on a finished write and may be `updating` only as a brief in-place revision.
+- GAP: a live second-week update on a published owner bot waits on template publishing.
+
+## 6. Alerts
+- Pass: the five alert types and the `templates/alert-preferences.md` defaults (in-chat on, other channels off until confirmed) are documented. Dashboard "This week" has a quiet-week empty state.
+- GAP: a live send to email, Slack, or SMS is not run in this checklist. Do not send test messages.
+
+## 7. Weekly digest (template only)
+- Pass: `templates/weekly-digest-prompt.md` exists, names the same-Page link, forbids promised point gains, and says not to create the routine until the owner asks.
+- GAP: do not create a live routine in this check.
+
+## 8. Export
+- Pass: a Stage 1 bundle and `CreditSnapshot` 1.0.0 export validate, use example data only, and stay PII-scrubbed (`****` masks, no full SSN).

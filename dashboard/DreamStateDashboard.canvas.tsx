@@ -4,6 +4,7 @@ import {
   LineChart,
   Page,
   Properties,
+  Rows,
   Section,
   Segmented,
   Status,
@@ -18,10 +19,13 @@ import {
 type RangeKey = "4w" | "12w" | "all";
 type BureauKey = "equifax" | "experian" | "transunion";
 type StatusTone = "success" | "warning" | "danger" | "accent" | "neutral";
+type PageState = "ready" | "updating" | "first_week";
+type RowTone = "success" | "warning" | "danger";
 
 const DATA = {
   week_label: "2026-W47",
   is_example_data: true,
+  page_state: "ready" as PageState,
   scores: [
     {
       bureau: "equifax" as BureauKey,
@@ -234,12 +238,13 @@ const DATA = {
     { bureau: "equifax" as BureauKey, creditor_display: "Northstar Credit Union", masked: "****5678", balance: "$400", limit: "$5,000", util: "8%" },
     { bureau: "experian" as BureauKey, creditor_display: "Summit Bank", masked: "****1234", balance: "$950", limit: "$12,000", util: "8%" },
     { bureau: "experian" as BureauKey, creditor_display: "Northstar Credit Union", masked: "****5678", balance: "$400", limit: "$5,000", util: "8%" },
-    { bureau: "experian" as BureauKey, creditor_display: "Cascadia Auto Finance", masked: "****9012", balance: "$11,050", limit: "\u2014", util: "\u2014" },
+    { bureau: "experian" as BureauKey, creditor_display: "Cascadia Auto Finance", masked: "****9012", balance: "$11,050", limit: "n/a", util: "n/a" },
     { bureau: "transunion" as BureauKey, creditor_display: "Summit Bank", masked: "****1234", balance: "$950", limit: "$10,000", util: "10%" },
     { bureau: "transunion" as BureauKey, creditor_display: "Northstar Credit Union", masked: "****5678", balance: "$400", limit: "$5,000", util: "8%" },
-    { bureau: "transunion" as BureauKey, creditor_display: "Cascadia Auto Finance", masked: "****9012", balance: "$11,050", limit: "\u2014", util: "\u2014" },
+    { bureau: "transunion" as BureauKey, creditor_display: "Cascadia Auto Finance", masked: "****9012", balance: "$11,050", limit: "n/a", util: "n/a" },
   ],
 };
+
 
 function bandTone(band: string): StatusTone {
   if (band === "Exceptional" || band === "Very good") return "success";
@@ -263,22 +268,28 @@ function sparseLabel(label: string, index: number, count: number): string {
   return keep.has(index) ? label : "";
 }
 
+function rowTone(tone: StatusTone): RowTone | undefined {
+  if (tone === "success" || tone === "warning" || tone === "danger") return tone;
+  return undefined;
+}
+
 function ScoreFigure({ value }: { value: number }) {
   const theme = useGrokTheme();
   return (
-    <div>
+    <div style={{ padding: "4px 0 8px" }}>
       <div
         style={{
           ...theme.font.heading1,
-          fontSize: 56,
-          lineHeight: "64px",
-          letterSpacing: "-0.03em",
+          fontSize: 64,
+          lineHeight: "72px",
+          letterSpacing: "-0.04em",
+          fontVariantNumeric: "tabular-nums",
           color: theme.text.primary,
         }}
       >
         {value}
       </div>
-      <div style={{ ...theme.font.caption, color: theme.text.tertiary, marginTop: 2 }}>
+      <div style={{ ...theme.font.caption, color: theme.text.secondary, marginTop: 6 }}>
         FICO Score 8
       </div>
     </div>
@@ -289,11 +300,11 @@ function UtilizationMeter({ pct, bandId }: { pct: number; bandId: string }) {
   const theme = useGrokTheme();
   const bands = DATA.utilization_meter.bands;
   const W = 640;
-  const H = 56;
-  const padX = 4;
-  const gap = 6;
-  const trackY = 8;
-  const trackH = 14;
+  const H = 64;
+  const padX = 0;
+  const gap = 8;
+  const trackY = 14;
+  const trackH = 12;
   const n = bands.length;
   const segW = (W - padX * 2 - gap * (n - 1)) / n;
   const active = Math.max(0, bands.findIndex((b) => b.id === bandId));
@@ -315,16 +326,16 @@ function UtilizationMeter({ pct, bandId }: { pct: number; bandId: string }) {
               y={trackY}
               width={segW}
               height={trackH}
-              rx={7}
+              rx={6}
               fill={on ? theme.dataviz.categorical[0] : theme.fill.secondary}
             />
             <text
               x={x + segW / 2}
-              y={trackY + trackH + 16}
+              y={trackY + trackH + 22}
               textAnchor="middle"
-              fill={theme.text.tertiary}
+              fill={on ? theme.text.primary : theme.text.secondary}
               fontFamily={theme.font.family}
-              fontSize={12}
+              fontSize={13}
             >
               {b.label}
             </text>
@@ -332,7 +343,7 @@ function UtilizationMeter({ pct, bandId }: { pct: number; bandId: string }) {
         );
       })}
       <polygon
-        points={`${markerX},${trackY - 5} ${markerX - 6},${trackY - 13} ${markerX + 6},${trackY - 13}`}
+        points={`${markerX},${trackY - 6} ${markerX - 6},${trackY - 14} ${markerX + 6},${trackY - 14}`}
         fill={theme.dataviz.categorical[0]}
       />
     </svg>
@@ -342,13 +353,15 @@ function UtilizationMeter({ pct, bandId }: { pct: number; bandId: string }) {
 export default function App() {
   const [range, setRange] = useState<RangeKey>("12w");
   const [showAllChanges, setShowAllChanges] = useState(false);
-  const [showReport, setShowReport] = useState(false);
   const defaultBureau = (DATA.bureaus[1]?.bureau ?? DATA.bureaus[0]?.bureau ?? "experian") as BureauKey;
   const [reportBureau, setReportBureau] = useState<BureauKey>(defaultBureau);
 
   const featuredAlerts = DATA.consumer_alerts.slice(0, 3);
   const extraAlerts = DATA.consumer_alerts.slice(3);
   const visibleAlerts = showAllChanges ? DATA.consumer_alerts : featuredAlerts;
+  const leadMove = DATA.next_moves[0];
+  const moreMoves = DATA.next_moves.slice(1);
+  const pageState = DATA.page_state;
 
   const series = useMemo(() => {
     const n = range === "4w" ? 4 : range === "12w" ? 12 : DATA.history.length;
@@ -364,8 +377,8 @@ export default function App() {
 
   const chartLines = useMemo(() => {
     return [
-      { label: "Experian", values: series.map((p) => p.experian) },
-      { label: "TransUnion", values: series.map((p) => p.transunion) },
+      { label: "Experian FICO Score 8", values: series.map((p) => p.experian) },
+      { label: "TransUnion FICO Score 8", values: series.map((p) => p.transunion) },
     ];
   }, [series]);
 
@@ -379,6 +392,8 @@ export default function App() {
 
   const reportAccounts = DATA.accounts.filter((a) => a.bureau === reportBureau);
   const bureauOptions = DATA.bureaus.map((b) => ({ value: b.bureau, label: b.label }));
+  const showChart = DATA.history.length >= 2 && pageState !== "first_week";
+  const showRange = DATA.history.length >= 4;
 
   return (
     <Page
@@ -388,10 +403,16 @@ export default function App() {
       }
       width="wide"
     >
+      {pageState === "updating" ? (
+        <Callout tone="info" lead="Updating this week">
+          Last week stays on the page until the new pull is ready.
+        </Callout>
+      ) : null}
+
       <Section heading="Your FICO Score 8" caption="Equifax from myFICO Free, Experian from Experian free, and TransUnion from CreditWise.">
-        <Grid columns={3}>
+        <Grid columns={3} joined>
           {DATA.scores.map((s) => (
-            <Section heading={s.label} caption={`FICO Score 8 \u00b7 ${s.source}`} key={s.bureau}>
+            <Section heading={s.label} caption={`FICO Score 8 · ${s.source}`} key={s.bureau}>
               <ScoreFigure value={s.value} />
               <Status tone={bandTone(s.band)}>{s.band}</Status>
               <Properties
@@ -403,36 +424,53 @@ export default function App() {
             </Section>
           ))}
         </Grid>
-        <Segmented
-          value={range}
-          onChange={setRange}
-          options={[
-            { value: "4w", label: "4 weeks" },
-            { value: "12w", label: "12 weeks" },
-            { value: "all", label: "All" },
-          ]}
-        />
-        <LineChart
-          points={chartPoints}
-          lines={chartLines}
-          floor={720}
-          ceiling={800}
-          labels={["Equifax"]}
-          annotations={annotations}
-        />
-        <Callout tone="info" lead="All three sit in Very good">
-          The TransUnion dip is likely the new Harbor Premier Bank inquiry. If that was not you, it is worth a closer look.
-        </Callout>
+        {showRange ? (
+          <Segmented
+            value={range}
+            onChange={setRange}
+            options={[
+              { value: "4w", label: "4 weeks" },
+              { value: "12w", label: "12 weeks" },
+              { value: "all", label: "All" },
+            ]}
+          />
+        ) : null}
+        {showChart ? (
+          <LineChart
+            points={chartPoints}
+            lines={chartLines}
+            floor={720}
+            ceiling={800}
+            labels={["Equifax FICO Score 8"]}
+            annotations={annotations}
+          />
+        ) : (
+          <Text>Your history will build here after the next weekly pull.</Text>
+        )}
       </Section>
 
-      <Section heading="What's moving your score" caption="Plain-English factors on each bureau, not a FICO model breakdown.">
-        <Grid columns={3}>
-          {DATA.factors.map((f) => (
-            <Section heading={f.label} key={f.bureau}>
-              <Properties items={f.items} />
-            </Section>
-          ))}
-        </Grid>
+      <Section
+        heading="What to do this week"
+        caption={`Overall utilization is ${DATA.utilization_meter.pct}% in the ${DATA.utilization_meter.band_label} band`}
+      >
+        {DATA.next_moves.length === 0 ? (
+          <Text>You are in good shape. Keep paying on time and stay in this band.</Text>
+        ) : (
+          <>
+            <Callout lead={leadMove.status}>{`${leadMove.title} ${leadMove.detail}`}</Callout>
+            {moreMoves.length > 0 ? (
+              <Rows
+                rows={moreMoves.map((m) => ({
+                  title: m.title,
+                  detail: m.detail,
+                  status: rowTone(m.tone) ? { label: m.status, tone: rowTone(m.tone) } : { label: m.status },
+                }))}
+              />
+            ) : null}
+          </>
+        )}
+        <Text>{DATA.projection}</Text>
+        <UtilizationMeter pct={DATA.utilization_meter.pct} bandId={DATA.utilization_meter.band_id} />
       </Section>
 
       <Section
@@ -447,41 +485,31 @@ export default function App() {
           ) : undefined
         }
       >
-        {visibleAlerts.length === 1 ? (
-          <Section heading={visibleAlerts[0].title}>
-            <Status tone={visibleAlerts[0].tone}>{visibleAlerts[0].status}</Status>
-            <Text>{visibleAlerts[0].detail}</Text>
-          </Section>
+        {visibleAlerts.length === 0 ? (
+          <Text>Quiet week. No new inquiries, late marks, or surprises.</Text>
         ) : (
-          <Grid columns={visibleAlerts.length === 2 ? 2 : 3}>
-            {visibleAlerts.map((a) => (
-              <Section heading={a.title} key={a.id}>
-                <Status tone={a.tone}>{a.status}</Status>
-                <Text>{a.detail}</Text>
-              </Section>
-            ))}
-          </Grid>
+          <Rows
+            rows={visibleAlerts.map((a) => ({
+              title: a.title,
+              detail: a.detail,
+              status: rowTone(a.tone) ? { label: a.status, tone: rowTone(a.tone) } : { label: a.status },
+            }))}
+          />
         )}
       </Section>
 
-      <Section
-        heading="Your next move"
-        caption={`Overall utilization is ${DATA.utilization_meter.pct}% \u00b7 ${DATA.utilization_meter.band_label}`}
-      >
-        <Grid columns={2}>
-          {DATA.next_moves.map((m) => (
-            <Section heading={m.title} key={m.title}>
-              <Status tone={m.tone}>{m.status}</Status>
-              <Text>{m.detail}</Text>
+      <Section heading="What's moving your score" caption="Plain-English factors on each bureau, not a FICO model breakdown.">
+        <Grid columns={3} joined>
+          {DATA.factors.map((f) => (
+            <Section heading={f.label} key={f.bureau}>
+              <Properties items={f.items} />
             </Section>
           ))}
         </Grid>
-        <Text>{DATA.projection}</Text>
-        <UtilizationMeter pct={DATA.utilization_meter.pct} bandId={DATA.utilization_meter.band_id} />
       </Section>
 
       <Section heading="Your three bureaus">
-        <Grid columns={3}>
+        <Grid columns={3} joined>
           {DATA.bureaus.map((b) => (
             <Section heading={b.label} key={b.bureau}>
               <Properties
@@ -510,44 +538,35 @@ export default function App() {
       <Section
         heading="VantageScore 3.0"
         caption="A different model than FICO Score 8, from myEquifax / Core Credit and TransUnion Credit Essentials."
+        collapsible
+        defaultOpen={false}
       >
-        <Grid columns={2}>
-          {DATA.vantage.map((v) => (
-            <Section heading={v.label} key={v.label} caption={v.source}>
-              <Properties
-                items={[
-                  { label: "VantageScore 3.0", value: String(v.value) },
-                  { label: "As of", value: v.as_of },
-                ]}
-              />
-            </Section>
-          ))}
-        </Grid>
+        <Rows
+          rows={DATA.vantage.map((v) => ({
+            title: v.label,
+            detail: `${v.source} · ${v.as_of}`,
+            meta: String(v.value),
+          }))}
+        />
       </Section>
 
       <Section
         heading="See full report"
         caption="A simple list of the accounts on file."
-        actions={
-          <Toggle label="Show accounts" value={showReport} onChange={setShowReport} />
-        }
+        collapsible
+        defaultOpen={false}
       >
-        {showReport ? (
-          <>
-            <Segmented value={reportBureau} onChange={setReportBureau} options={bureauOptions} />
-            <Table
-              columns={["Account", "Balance", "Limit", "Use"]}
-              rows={reportAccounts.map((a) => [
-                `${a.creditor_display} ${a.masked}`,
-                a.balance,
-                a.limit,
-                a.util,
-              ])}
-            />
-          </>
-        ) : (
-          <Text>Turn this on when you want to look at every account on one bureau.</Text>
-        )}
+        <Segmented value={reportBureau} onChange={setReportBureau} options={bureauOptions} />
+        <Table
+          columns={["Account", "Balance", "Limit", "Use"]}
+          align={["start", "end", "end", "end"]}
+          rows={reportAccounts.map((a) => [
+            `${a.creditor_display} ${a.masked}`,
+            a.balance,
+            a.limit,
+            a.util,
+          ])}
+        />
       </Section>
 
       <Text>

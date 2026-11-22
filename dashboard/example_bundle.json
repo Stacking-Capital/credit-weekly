@@ -152,6 +152,8 @@
       }
     ]
   },
+  "page_state": "ready",
+  "as_of_display": "Nov 16, 2026",
   "consumer_alerts": [
     {
       "id": "new_hard_inquiry-HARBOR PREMIER BANK",
@@ -457,9 +459,9 @@
       "is_adverse": true,
       "balance": "$11,050",
       "balance_cents": 1105000,
-      "limit": "\u2014",
+      "limit": "n/a",
       "limit_cents": 0,
-      "util": "\u2014",
+      "util": "n/a",
       "opened": "2024-02-10",
       "updated": "2026-11-10"
     },
@@ -511,9 +513,9 @@
       "is_adverse": false,
       "balance": "$11,050",
       "balance_cents": 1105000,
-      "limit": "\u2014",
+      "limit": "n/a",
       "limit_cents": 0,
-      "util": "\u2014",
+      "util": "n/a",
       "opened": "2024-02-10",
       "updated": "2026-11-10"
     }
