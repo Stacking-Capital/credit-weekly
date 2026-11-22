@@ -28,6 +28,8 @@ class DashboardHistoryTests(unittest.TestCase):
         self.assertTrue(all(a["week"] == "2026-W47" for a in bundle["chart_annotations"]))
         tsx = render_canvas_tsx(bundle)
         self.assertIn("Not a FICO score", tsx)
+        self.assertIn("What to do this week", tsx)
+        self.assertIn("example data", tsx.lower())
         self.assertIn("is_example_data", tsx)
         self.assertIn('"is_example_data": true', tsx)
         self.assertNotIn("FICO Score", tsx)

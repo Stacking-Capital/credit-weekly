@@ -81,10 +81,12 @@ class PipelineTests(unittest.TestCase):
         self.assertIn("Not a FICO score", tsx)
         self.assertIn("Your Credit-Health Index", tsx)
         self.assertIn("This week", tsx)
-        self.assertIn("Your next move", tsx)
+        self.assertIn("What to do this week", tsx)
         self.assertIn("See all changes", tsx)
         self.assertIn("Your three bureaus", tsx)
         self.assertIn("See full report", tsx)
+        self.assertIn("collapsible", tsx)
+        self.assertIn("Not a FICO score", tsx)  # hero label lock
         self.assertIn("New inquiry", tsx)
         self.assertNotIn("000-00-0000", tsx)
         self.assertNotIn("type ViewTab", tsx)

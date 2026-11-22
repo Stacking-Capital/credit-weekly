@@ -196,27 +196,31 @@ Decrypt the prior week's snapshot from `<store>/vault/` and run `credit_weekly.c
 Re-encrypt the new snapshot with AES-256-GCM into `<store>/vault/` and delete temporary plaintext files.
 
 ### Step 5: Alerts Layer (in-dashboard + multi-channel)
-Evaluate the user's per-alert preferences (`in_chat`, `email`, `slack`, `sms`/`imessage`) across 5 types:
+Follow the saved alert-preferences flow in `/workspace/credit-weekly/templates/alert-preferences.md`. Evaluate the user's per-alert preferences (`in_chat`, `email`, `slack`, `sms`/`imessage`) across 5 types:
 1. **New Hard Inquiry Alert** (plus bureau 6-month cap warning if ≥2)
 2. **Score / Credit-Health Index Change Alert**
 3. **New Account Opened Alert**
 4. **Balance / Utilization Band Crossing Alert** (crossing >9%, >20%, or >30%)
 5. **Negative Item Added or Removed Alert** (lates, collections, public records)
 
-Dispatch only to opted-in channels. Get explicit confirmation before any external Slack/SMS/email send if a saved routine preference does not already authorize it.
+Default: every type is on for in-chat; email, Slack, and SMS stay off until the owner connects that channel and confirms. Dispatch only to opted-in channels. Get explicit confirmation before any external Slack/SMS/email send if a saved routine preference does not already authorize it. Never send from a template by default.
 
-### Step 6: Update the summary-first Grok Page
-Use the dashboard Page template at `/workspace/credit-weekly/dashboard/ExampleDashboard.canvas.tsx` (layout and controls). Replace the embedded `DATA` object with this week's PII-scrubbed bundle (`credit_weekly.cli export-dashboard` or the example bundle shape in `dashboard/example_bundle.json`).
+### Step 6: Update the same Grok Page every week
+Use the dashboard Page template at `/workspace/credit-weekly/dashboard/ExampleDashboard.canvas.tsx` (layout and controls). Replace the embedded `DATA` object with this week's PII-scrubbed bundle (`credit_weekly.cli export-dashboard` or the example bundle shape in `dashboard/example_bundle.json`). Set `is_example_data` to false on a real owner's Page. Set `page_state` to `ready` on the finished write.
 
-- If `<store>/canvas_id.txt` exists, `WriteCanvas` that `canvas_id` (same persistent Page).
-- If not (first run), `WriteCanvas` a **new** private Page titled for this owner (not the public Blueprint), then save the new `canvas_id` only in their store.
+The owner has **one** dashboard Page. Its URL must not change from week to week.
 
-Layout contract (consumer page, not an analyst dump). Copy is short, warm, and plain. Use the kit's Hero-style index, Metrics or a custom index figure, LineChart, Segmented, Grid cards, Properties, Status pills, and a utilization band meter — all in the one kit look, `width="wide"`:
-- **Hero:** one big Credit-Health Index number, a one-word band (e.g. Good) as a Status pill, the week-over-week change, and a small "Not a FICO score" note. Under it, a history LineChart with a Segmented range (4 weeks / 12 weeks / All) and an annotation on any new-inquiry week. Once Stage 2 or 3 is on, keep this index and add model-labeled scores nearby — never present the index as a FICO.
-- **This week:** at most 3 plain-English alert cards (e.g. "New inquiry from Harbor Premier Bank on TransUnion. Was this you?"), each with a Status pill. Any further changes sit behind a "See all changes" Toggle.
-- **Your next move:** 1–3 action cards from the optimizer, with pay-by dates and amounts (e.g. "Pay $X on Summit card by Dec 3 to report under 9%"), plus a simple utilization band meter (0 / 1–9 / 10–20 / 21–29 / 30+) showing where they are.
+- If `<store>/canvas_id.txt` exists, `WriteCanvas` **that exact** `canvas_id`. Do not open a new Page, and do not append a week number to the title as if it were a new document. Prefer one finished write once the bundle is ready. If a pull will take long enough that the owner might open a stale view, you may first write the same id with `page_state: "updating"` and last week's numbers still on the Page, then write again with the new bundle and `page_state: "ready"`. After the write, confirm the url is unchanged and tell the owner their Page was updated, with that same link.
+- If `canvas_id.txt` is missing (first run), `WriteCanvas` a **new** private Page titled for this owner (not the public Blueprint or the public example Pages), then save the new `canvas_id` only in their store. Use `page_state: "first_week"` when there is not yet a prior week to chart.
+- Never overwrite the public Blueprint Page (`canvas_id` `1efc1c3f-a5c5-4ed8-9edc-1e45c4ea07e4`), the Stage 1 example Page (`a669f6e0-1cb8-4435-a852-d8388d8d0880`), or the dream-state example Page (`15e9c3b4-0c70-4bdc-9ad0-ff712e3e4585`).
+- If the stored id does not open or the write fails, stop and tell the owner in this chat. Do not silently create a second dashboard.
+
+Layout contract (consumer page, not an analyst dump). Copy is short, warm, and plain, with no em dashes. Stay in the one kit look, `width="wide"`:
+- **Hero:** one large Credit-Health Index number with tabular figures, a one-word band (e.g. Good) as a Status pill, the week-over-week change, an "As of" date, and a small "Not a FICO score" note. Under it, a history LineChart with a Segmented range (4 weeks / 12 weeks / All) once at least four weeks exist, scaled near the data so the weekly move is easy to see, and an annotation on a paydown or new-inquiry week. If this is the first week, keep the hero and use the empty line "Your history will build here after the next weekly pull." Once Stage 2 or 3 is on, keep this index and add model-labeled scores nearby; never present the index as a FICO.
+- **What to do this week** (the action focus, directly under the hero): one lead Callout from the optimizer, any other moves as rows, plus a utilization band meter (0 / 1-9 / 10-20 / 21-29 / 30+). If there is nothing to change, use "You are in good shape. Keep paying on time and stay in this band." Never promise a point gain.
+- **This week:** at most 3 plain-English changes as rows (e.g. "New inquiry from Harbor Premier Bank on TransUnion. Was this you?"), each with a Status label. Any further changes sit behind a "See all changes" Toggle. If there are none, use "Quiet week. No new inquiries, late marks, or surprises."
 - **Three bureau tiles** in a Grid (Equifax / Experian / TransUnion): utilization, on-time %, inquiries, negatives, and last updated.
-- **See full report** (secondary, near the bottom, collapsed by default): a Segmented bureau switch and a clean account list. No accordion of raw tables, no personal-info dump.
+- **See full report** (secondary, near the bottom, collapsed by default, one tap to open): a Segmented bureau switch and a clean account list. No accordion of raw tables, no personal-info dump.
 - Never put SSN, full DOB, passwords, or full account numbers on the Page. Never imitate a bureau's official UI. No `<form>` and no secret collection on the Page.
 
 ### Step 7: Create routines (if not already created)
@@ -247,6 +251,10 @@ Write each routine as intent, not a frozen tool list. End with who receives the 
 - **When:** After every weekly parse/diff.
 - **Prompt:** If a connected FICO 8 or the Credit-Health Index (labeled not a FICO) changed, or if a late, collection, or public record was added or removed, alert with a plain-language summary. Deliver to the user in this chat and on opted-in channels. If nothing changed, do not send this alert.
 
+### Weekly digest (template only; do not create this routine until the owner asks)
+- **Schedule:** after the weekly pull finishes, or `30 9 * * 1` (Mondays 9:30 AM local) if they want a standing summary even when a pull was not due. At least 5 minutes from any other routine.
+- **Prompt:** Use the ready-to-create text in `/workspace/credit-weekly/templates/weekly-digest-prompt.md`. Do not create the routine until the owner agrees. Do not invent bureau click-paths. If nothing material changed, stay quiet unless they asked for an all-clear.
+
 ---
 
 ## Dashboard Page template
@@ -256,4 +264,4 @@ Canonical layout (synthetic "Jordan Example" data, safe to ship in the public re
 - Data shape: `/workspace/credit-weekly/dashboard/example_bundle.json`
 - Local fallback viewer: `/workspace/credit-weekly/dashboard/index.html`
 
-On each weekly run, copy the template's structure, swap in the scrubbed bundle, and write or update the owner's private Grok Page. Do not overwrite the public Blueprint Page (`canvas_id` `1efc1c3f-a5c5-4ed8-9edc-1e45c4ea07e4`).
+On each weekly run, copy the template's structure, swap in the scrubbed bundle, and write or update the owner's **existing** private Grok Page (same `canvas_id`, same url). Do not overwrite the public Blueprint Page (`canvas_id` `1efc1c3f-a5c5-4ed8-9edc-1e45c4ea07e4`) or the public example Pages.

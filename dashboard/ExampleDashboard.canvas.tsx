@@ -1,8 +1,10 @@
 import {
+  Callout,
   Grid,
   LineChart,
   Page,
   Properties,
+  Rows,
   Section,
   Segmented,
   Status,
@@ -17,10 +19,14 @@ import {
 type RangeKey = "4w" | "12w" | "all";
 type BureauKey = "equifax" | "experian" | "transunion";
 type StatusTone = "success" | "warning" | "danger" | "accent" | "neutral";
+type PageState = "ready" | "updating" | "first_week";
+type RowTone = "success" | "warning" | "danger";
 
 const DATA = {
   "week_label": "2026-W47",
   "is_example_data": true,
+  "page_state": "ready",
+  "as_of_display": "Nov 16, 2026",
   "health_summary": {
     "credit_health_index": 89,
     "credit_health_band": "Good",
@@ -232,8 +238,8 @@ const DATA = {
       "creditor_display": "Cascadia Auto Finance",
       "masked": "****9012",
       "balance": "$11,050",
-      "limit": "—",
-      "util": "—"
+      "limit": "n/a",
+      "util": "n/a"
     },
     {
       "bureau": "transunion",
@@ -256,13 +262,15 @@ const DATA = {
       "creditor_display": "Cascadia Auto Finance",
       "masked": "****9012",
       "balance": "$11,050",
-      "limit": "—",
-      "util": "—"
+      "limit": "n/a",
+      "util": "n/a"
     }
   ]
 } as {
   week_label: string;
   is_example_data: boolean;
+  page_state: PageState;
+  as_of_display: string;
   health_summary: {
     credit_health_index: number;
     credit_health_band: string;
@@ -324,6 +332,13 @@ function sparseLabel(label: string, index: number, count: number): string {
   return keep.has(index) ? label : "";
 }
 
+function chiScale(values: number[]): { floor: number; ceiling: number } {
+  if (values.length === 0) return { floor: 0, ceiling: 100 };
+  const raw = Math.min(...values);
+  const floor = Math.max(0, Math.min(70, Math.floor((raw - 5) / 10) * 10));
+  return { floor, ceiling: 100 };
+}
+
 function bandTone(band: string): StatusTone {
   if (band === "Excellent" || band === "Good") return "success";
   if (band === "Fair") return "accent";
@@ -331,12 +346,19 @@ function bandTone(band: string): StatusTone {
   return "danger";
 }
 
+function rowTone(tone: StatusTone): RowTone | undefined {
+  if (tone === "success" || tone === "warning" || tone === "danger") return tone;
+  return undefined;
+}
+
 function IndexHero({
   value,
   delta,
+  asOf,
 }: {
   value: number;
   delta: number | null;
+  asOf: string;
 }) {
   const theme = useGrokTheme();
   const deltaText =
@@ -353,27 +375,34 @@ function IndexHero({
         display: "flex",
         flexWrap: "wrap",
         alignItems: "baseline",
-        gap: 20,
+        gap: 28,
+        padding: "8px 0 12px",
       }}
     >
       <div
         style={{
           ...theme.font.heading1,
-          fontSize: 64,
-          lineHeight: "72px",
-          letterSpacing: "-0.03em",
+          fontSize: 80,
+          lineHeight: "88px",
+          letterSpacing: "-0.04em",
+          fontVariantNumeric: "tabular-nums",
           color: theme.text.primary,
         }}
       >
         {value}
       </div>
-      <div>
+      <div style={{ minWidth: 160, paddingBottom: 8 }}>
         <div style={{ ...theme.font.subtext, color: theme.text.secondary }}>
           {deltaText}
         </div>
-        <div style={{ ...theme.font.caption, color: theme.text.tertiary, marginTop: 4 }}>
+        <div style={{ ...theme.font.caption, color: theme.text.secondary, marginTop: 6 }}>
           Not a FICO score
         </div>
+        {asOf ? (
+          <div style={{ ...theme.font.caption, color: theme.text.secondary, marginTop: 4 }}>
+            {`As of ${asOf}`}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -383,11 +412,11 @@ function UtilizationMeter({ pct, bandId }: { pct: number; bandId: string }) {
   const theme = useGrokTheme();
   const bands = DATA.utilization_meter.bands;
   const W = 640;
-  const H = 56;
-  const padX = 4;
-  const gap = 6;
-  const trackY = 8;
-  const trackH = 14;
+  const H = 64;
+  const padX = 0;
+  const gap = 8;
+  const trackY = 14;
+  const trackH = 12;
   const n = bands.length;
   const segW = (W - padX * 2 - gap * (n - 1)) / n;
   const active = Math.max(0, bands.findIndex((b) => b.id === bandId));
@@ -409,16 +438,16 @@ function UtilizationMeter({ pct, bandId }: { pct: number; bandId: string }) {
               y={trackY}
               width={segW}
               height={trackH}
-              rx={7}
+              rx={6}
               fill={on ? theme.dataviz.categorical[0] : theme.fill.secondary}
             />
             <text
               x={x + segW / 2}
-              y={trackY + trackH + 16}
+              y={trackY + trackH + 22}
               textAnchor="middle"
-              fill={theme.text.tertiary}
+              fill={on ? theme.text.primary : theme.text.secondary}
               fontFamily={theme.font.family}
-              fontSize={12}
+              fontSize={13}
             >
               {b.label}
             </text>
@@ -426,7 +455,7 @@ function UtilizationMeter({ pct, bandId }: { pct: number; bandId: string }) {
         );
       })}
       <polygon
-        points={`${markerX},${trackY - 5} ${markerX - 6},${trackY - 13} ${markerX + 6},${trackY - 13}`}
+        points={`${markerX},${trackY - 6} ${markerX - 6},${trackY - 14} ${markerX + 6},${trackY - 14}`}
         fill={theme.dataviz.categorical[0]}
       />
     </svg>
@@ -436,14 +465,16 @@ function UtilizationMeter({ pct, bandId }: { pct: number; bandId: string }) {
 export default function App() {
   const [range, setRange] = useState<RangeKey>("12w");
   const [showAllChanges, setShowAllChanges] = useState(false);
-  const [showReport, setShowReport] = useState(false);
   const defaultBureau = (DATA.bureaus[1]?.bureau ?? DATA.bureaus[0]?.bureau ?? "experian") as BureauKey;
   const [reportBureau, setReportBureau] = useState<BureauKey>(defaultBureau);
 
   const hs = DATA.health_summary;
+  const pageState = DATA.page_state;
   const featuredAlerts = DATA.consumer_alerts.slice(0, 3);
   const extraAlerts = DATA.consumer_alerts.slice(3);
   const visibleAlerts = showAllChanges ? DATA.consumer_alerts : featuredAlerts;
+  const leadMove = DATA.next_moves[0];
+  const moreMoves = DATA.next_moves.slice(1);
 
   const series = useMemo(() => {
     const n = range === "4w" ? 4 : range === "12w" ? 12 : DATA.history.length;
@@ -455,6 +486,8 @@ export default function App() {
     }));
   }, [range]);
 
+  const scale = useMemo(() => chiScale(series.map((p) => p.value)), [series]);
+
   const annotations = useMemo(() => {
     return DATA.chart_annotations.flatMap((a) => {
       const at = series.findIndex((p) => p.week === a.week);
@@ -465,6 +498,8 @@ export default function App() {
 
   const reportAccounts = DATA.accounts.filter((a) => a.bureau === reportBureau);
   const bureauOptions = DATA.bureaus.map((b) => ({ value: b.bureau, label: b.label }));
+  const showChart = DATA.history.length >= 2 && pageState !== "first_week";
+  const showRange = DATA.history.length >= 4;
 
   return (
     <Page
@@ -472,28 +507,64 @@ export default function App() {
       summary={"A simple weekly look at Jordan Example\u2019s reports. The Credit-Health Index is not a FICO score."}
       width="wide"
     >
+      {pageState === "updating" ? (
+        <Callout tone="info" lead="Updating this week">
+          Last week stays on the page until the new pull is ready.
+        </Callout>
+      ) : null}
+
       <Section heading="Your Credit-Health Index">
         <IndexHero
           value={hs.credit_health_index}
           delta={hs.credit_health_delta}
+          asOf={DATA.as_of_display}
         />
         <Status tone={bandTone(hs.credit_health_band)}>{hs.credit_health_band}</Status>
-        <Segmented
-          value={range}
-          onChange={setRange}
-          options={[
-            { value: "4w", label: "4 weeks" },
-            { value: "12w", label: "12 weeks" },
-            { value: "all", label: "All" },
-          ]}
-        />
-        <LineChart
-          points={series.map((p) => ({ label: p.label, value: p.value }))}
-          floor={0}
-          ceiling={100}
-          labels={["Credit-Health Index"]}
-          annotations={annotations}
-        />
+        {showRange ? (
+          <Segmented
+            value={range}
+            onChange={setRange}
+            options={[
+              { value: "4w", label: "4 weeks" },
+              { value: "12w", label: "12 weeks" },
+              { value: "all", label: "All" },
+            ]}
+          />
+        ) : null}
+        {showChart ? (
+          <LineChart
+            points={series.map((p) => ({ label: p.label, value: p.value }))}
+            floor={scale.floor}
+            ceiling={scale.ceiling}
+            labels={["Credit-Health Index"]}
+            annotations={annotations}
+          />
+        ) : (
+          <Text>Your history will build here after the next weekly pull.</Text>
+        )}
+      </Section>
+
+      <Section
+        heading="What to do this week"
+        caption={`Overall utilization is ${hs.utilization_pct}% in the ${DATA.utilization_meter.band_label} band`}
+      >
+        {DATA.next_moves.length === 0 ? (
+          <Text>You are in good shape. Keep paying on time and stay in this band.</Text>
+        ) : (
+          <>
+            <Callout lead={leadMove.status}>{`${leadMove.title} ${leadMove.detail}`}</Callout>
+            {moreMoves.length > 0 ? (
+              <Rows
+                rows={moreMoves.map((m) => ({
+                  title: m.title,
+                  detail: m.detail,
+                  status: rowTone(m.tone) ? { label: m.status, tone: rowTone(m.tone) } : { label: m.status },
+                }))}
+              />
+            ) : null}
+          </>
+        )}
+        <UtilizationMeter pct={DATA.utilization_meter.pct} bandId={DATA.utilization_meter.band_id} />
       </Section>
 
       <Section
@@ -511,49 +582,19 @@ export default function App() {
       >
         {visibleAlerts.length === 0 ? (
           <Text>Quiet week. No new inquiries, late marks, or surprises.</Text>
-        ) : visibleAlerts.length === 1 ? (
-          <Section heading={visibleAlerts[0].title}>
-            <Status tone={visibleAlerts[0].tone}>{visibleAlerts[0].status}</Status>
-            <Text>{visibleAlerts[0].detail}</Text>
-          </Section>
         ) : (
-          <Grid columns={visibleAlerts.length === 2 ? 2 : 3}>
-            {visibleAlerts.map((a) => (
-              <Section heading={a.title} key={a.id}>
-                <Status tone={a.tone}>{a.status}</Status>
-                <Text>{a.detail}</Text>
-              </Section>
-            ))}
-          </Grid>
+          <Rows
+            rows={visibleAlerts.map((a) => ({
+              title: a.title,
+              detail: a.detail,
+              status: rowTone(a.tone) ? { label: a.status, tone: rowTone(a.tone) } : { label: a.status },
+            }))}
+          />
         )}
-      </Section>
-
-      <Section
-        heading="Your next move"
-        caption={`Overall utilization is ${hs.utilization_pct}% · ${DATA.utilization_meter.band_label}`}
-      >
-        {DATA.next_moves.length === 0 ? (
-          <Text>You're in good shape. Keep paying on time and stay in this band.</Text>
-        ) : DATA.next_moves.length === 1 ? (
-          <Section heading={DATA.next_moves[0].title}>
-            <Status tone={DATA.next_moves[0].tone}>{DATA.next_moves[0].status}</Status>
-            <Text>{DATA.next_moves[0].detail}</Text>
-          </Section>
-        ) : (
-          <Grid columns={DATA.next_moves.length === 2 ? 2 : 3}>
-            {DATA.next_moves.map((m) => (
-              <Section heading={m.title} key={m.title}>
-                <Status tone={m.tone}>{m.status}</Status>
-                <Text>{m.detail}</Text>
-              </Section>
-            ))}
-          </Grid>
-        )}
-        <UtilizationMeter pct={DATA.utilization_meter.pct} bandId={DATA.utilization_meter.band_id} />
       </Section>
 
       <Section heading="Your three bureaus">
-        <Grid columns={3}>
+        <Grid columns={3} joined>
           {DATA.bureaus.map((b) => (
             <Section heading={b.label} key={b.bureau}>
               <Properties
@@ -581,27 +622,25 @@ export default function App() {
       <Section
         heading="See full report"
         caption="A simple list of the accounts on file."
-        actions={
-          <Toggle label="Show accounts" value={showReport} onChange={setShowReport} />
-        }
+        collapsible
+        defaultOpen={false}
       >
-        {showReport ? (
-          <>
-            <Segmented value={reportBureau} onChange={setReportBureau} options={bureauOptions} />
-            <Table
-              columns={["Account", "Balance", "Limit", "Use"]}
-              rows={reportAccounts.map((a) => [
-                `${a.creditor_display} ${a.masked}`,
-                a.balance,
-                a.limit,
-                a.util,
-              ])}
-            />
-          </>
-        ) : (
-          <Text>Turn this on when you want to look at every account on one bureau.</Text>
-        )}
+        <Segmented value={reportBureau} onChange={setReportBureau} options={bureauOptions} />
+        <Table
+          columns={["Account", "Balance", "Limit", "Use"]}
+          align={["start", "end", "end", "end"]}
+          rows={reportAccounts.map((a) => [
+            `${a.creditor_display} ${a.masked}`,
+            a.balance,
+            a.limit,
+            a.util,
+          ])}
+        />
       </Section>
+
+      {DATA.is_example_data ? (
+        <Text>This page uses example data for Jordan Example. It is not a live credit pull.</Text>
+      ) : null}
     </Page>
   );
 }
