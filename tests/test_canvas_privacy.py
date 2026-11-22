@@ -42,6 +42,18 @@ class CanvasPrivacyTests(unittest.TestCase):
         self.assertNotIn("100 Maple", out)
         self.assertNotIn("correct-horse-battery-staple", out)
 
+    def test_demo_does_not_overwrite_canonical_example_page(self):
+        path = ROOT / "dashboard" / "ExampleDashboard.canvas.tsx"
+        before = path.read_text(encoding="utf-8")
+        buf = io.StringIO()
+        args = type("Args", (), {"root": str(ROOT)})()
+        with redirect_stdout(buf):
+            cmd_demo(args)
+        after = path.read_text(encoding="utf-8")
+        self.assertEqual(before, after)
+        generated = ROOT / "dashboard" / "generated-demo.canvas.tsx"
+        self.assertTrue(generated.is_file())
+
 
 if __name__ == "__main__":
     unittest.main()

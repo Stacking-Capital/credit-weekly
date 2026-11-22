@@ -107,10 +107,13 @@ def cmd_demo(args: argparse.Namespace) -> None:
     dash_dir.mkdir(parents=True, exist_ok=True)
     (dash_dir / "data.js").write_text(f"window.CREDIT_WEEKLY_DATA = {json.dumps(bundle)};\n", encoding="utf-8")
     (dash_dir / "example_bundle.json").write_text(json.dumps(bundle, indent=2), encoding="utf-8")
-    (dash_dir / "ExampleDashboard.canvas.tsx").write_text(render_canvas_tsx(bundle), encoding="utf-8")
+    # The canonical ExampleDashboard.canvas.tsx is hand-authored (12-week story,
+    # polish). Demo writes a generated copy for local inspection only.
+    generated = dash_dir / "generated-demo.canvas.tsx"
+    generated.write_text(render_canvas_tsx(bundle), encoding="utf-8")
     print(
         f"Demo built! Alerts: {diff_obj['alert_counts']} | "
-        f"Open {dash_dir / 'index.html'} or feed {dash_dir / 'ExampleDashboard.canvas.tsx'} to WriteCanvas."
+        f"Open {dash_dir / 'index.html'} or inspect {generated}."
     )
 
 

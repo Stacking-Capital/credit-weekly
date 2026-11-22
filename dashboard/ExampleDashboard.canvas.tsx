@@ -1,7 +1,6 @@
 import {
   Callout,
   Grid,
-  LineChart,
   Page,
   Properties,
   Rows,
@@ -30,7 +29,7 @@ const DATA = {
   "health_summary": {
     "credit_health_index": 89,
     "credit_health_band": "Good",
-    "credit_health_delta": 5,
+    "credit_health_delta": 0,
     "utilization_pct": 7.9
   },
   "history": [
@@ -76,7 +75,7 @@ const DATA = {
     },
     {
       "week": "2026-W46",
-      "credit_health_index": 84
+      "credit_health_index": 89
     },
     {
       "week": "2026-W47",
@@ -85,7 +84,7 @@ const DATA = {
   ],
   "chart_annotations": [
     {
-      "week": "2026-W47",
+      "week": "2026-W46",
       "label": "Paid down"
     },
     {
@@ -193,7 +192,7 @@ const DATA = {
     {
       "bureau": "transunion",
       "label": "TransUnion",
-      "utilization_pct": 0.0,
+      "utilization_pct": 7.9,
       "on_time_pct": 100.0,
       "hard_inquiries": 2,
       "adverse_count": 0,
@@ -246,8 +245,8 @@ const DATA = {
       "creditor_display": "Summit Bank",
       "masked": "****1234",
       "balance": "$950",
-      "limit": "$10,000",
-      "util": "10%"
+      "limit": "$12,000",
+      "util": "8%"
     },
     {
       "bureau": "transunion",
@@ -281,7 +280,7 @@ const DATA = {
     week: string;
     credit_health_index: number;
   }>;
-  chart_annotations: Array<{ week: string; label: string }>;
+  chart_annotations: Array<{ week: string; label: string; line?: number; value?: number }>;
   utilization_meter: {
     pct: number;
     band_id: string;
@@ -349,6 +348,138 @@ function bandTone(band: string): StatusTone {
 function rowTone(tone: StatusTone): RowTone | undefined {
   if (tone === "success" || tone === "warning" || tone === "danger") return tone;
   return undefined;
+}
+
+function joinSentences(title: string, detail: string): string {
+  const head = title.trim();
+  const lead = /[.!?]$/.test(head) ? head : `${head}.`;
+  return `${lead} ${detail.trim()}`;
+}
+
+type ChartSeries = { label: string; values: number[] };
+type ChartNote = { at: number; label: string; line?: number; value?: number };
+
+function HistoryChart({
+  series,
+  xLabels,
+  floor,
+  ceiling,
+  annotations,
+}: {
+  series: ChartSeries[];
+  xLabels: string[];
+  floor: number;
+  ceiling: number;
+  annotations: ChartNote[];
+}) {
+  const theme = useGrokTheme();
+  const W = 1280;
+  const H = 360;
+  const pad = { l: 64, r: 40, t: 48, b: 48 };
+  const innerW = W - pad.l - pad.r;
+  const innerH = H - pad.t - pad.b;
+  const last = Math.max(xLabels.length - 1, 1);
+  const xAt = (i: number) => pad.l + (i / last) * innerW;
+  const span = Math.max(ceiling - floor, 1);
+  const yAt = (v: number) => pad.t + ((ceiling - v) / span) * innerH;
+  const mid = Math.round((floor + ceiling) / 2);
+  const ticks = Array.from(new Set([floor, mid, ceiling]));
+  const labelPx = 14;
+  const ink = theme.text.secondary;
+  const colors = series.map((_, i) => theme.dataviz.categorical[i] ?? theme.dataviz.other);
+  const bySlot: Record<number, ChartNote[]> = {};
+  annotations.forEach((a) => {
+    bySlot[a.at] = bySlot[a.at] ? [...bySlot[a.at], a] : [a];
+  });
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      width="100%"
+      role="img"
+      aria-label={series.map((s) => s.label).join(", ")}
+    >
+      {ticks.map((tick) => (
+        <g key={`t-${tick}`}>
+          <line
+            x1={pad.l}
+            x2={W - pad.r}
+            y1={yAt(tick)}
+            y2={yAt(tick)}
+            stroke={theme.border.subtle}
+            strokeWidth={1}
+          />
+          <text
+            x={pad.l - 12}
+            y={yAt(tick) + 5}
+            textAnchor="end"
+            fill={ink}
+            fontFamily={theme.font.family}
+            fontSize={labelPx}
+          >
+            {String(tick)}
+          </text>
+        </g>
+      ))}
+      {xLabels.map((lab, i) =>
+        lab ? (
+          <text
+            key={`x-${i}`}
+            x={xAt(i)}
+            y={H - 16}
+            textAnchor={i === 0 ? "start" : i === last ? "end" : "middle"}
+            fill={ink}
+            fontFamily={theme.font.family}
+            fontSize={labelPx}
+          >
+            {lab}
+          </text>
+        ) : null,
+      )}
+      {series.map((s, si) => {
+        const pts = s.values.map((v, i) => `${xAt(i)},${yAt(v)}`);
+        const d = pts.map((pt, i) => `${i === 0 ? "M" : "L"}${pt}`).join(" ");
+        const area = `${d} L${xAt(s.values.length - 1)},${yAt(floor)} L${xAt(0)},${yAt(floor)} Z`;
+        return (
+          <g key={s.label}>
+            {si === 0 ? (
+              <path d={area} fill={colors[si]} opacity={0.16} />
+            ) : null}
+            <path d={d} fill="none" stroke={colors[si]} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+          </g>
+        );
+      })}
+      {Object.entries(bySlot).flatMap(([slot, notes]) =>
+        notes.map((a, ni) => {
+          const at = Number(slot);
+          const vals = series[a.line ?? 0]?.values ?? series[0].values;
+          const dataY = vals[at];
+          const lift = ((notes.length - 1 - ni) * (span * 0.08));
+          const pin = Math.min(ceiling, (a.value ?? dataY) + span * 0.14 + lift);
+          const x = xAt(at);
+          const y = yAt(pin);
+          const ly = yAt(dataY);
+          const nearRight = at >= xLabels.length - 2;
+          const tx = nearRight ? x - 8 : x;
+          const ty = y - 4;
+          return (
+            <g key={`${a.label}-${at}`}>
+              <line x1={x} y1={ly - 6} x2={tx} y2={ty + 4} stroke={ink} strokeWidth={1} />
+              <text
+                x={tx}
+                y={ty}
+                textAnchor={nearRight ? "end" : "middle"}
+                fill={ink}
+                fontFamily={theme.font.family}
+                fontSize={labelPx}
+              >
+                {a.label}
+              </text>
+            </g>
+          );
+        }),
+      )}
+    </svg>
+  );
 }
 
 function IndexHero({
@@ -532,11 +663,11 @@ export default function App() {
           />
         ) : null}
         {showChart ? (
-          <LineChart
-            points={series.map((p) => ({ label: p.label, value: p.value }))}
+          <HistoryChart
+            series={[{ label: "Credit-Health Index", values: series.map((p) => p.value) }]}
+            xLabels={series.map((p) => p.label)}
             floor={scale.floor}
             ceiling={scale.ceiling}
-            labels={["Credit-Health Index"]}
             annotations={annotations}
           />
         ) : (
@@ -552,7 +683,7 @@ export default function App() {
           <Text>You are in good shape. Keep paying on time and stay in this band.</Text>
         ) : (
           <>
-            <Callout lead={leadMove.status}>{`${leadMove.title} ${leadMove.detail}`}</Callout>
+            <Callout lead={leadMove.status}>{joinSentences(leadMove.title, leadMove.detail)}</Callout>
             {moreMoves.length > 0 ? (
               <Rows
                 rows={moreMoves.map((m) => ({

@@ -1,7 +1,7 @@
 import {
   Callout,
   Grid,
-  LineChart,
+  Legend,
   Page,
   Properties,
   Rows,
@@ -43,7 +43,7 @@ const DATA = {
       source: "Experian free",
       value: 764,
       band: "Very good",
-      delta: 6,
+      delta: 0,
       delta_period: "from last week",
       as_of: "Nov 21, 2026",
     },
@@ -69,11 +69,11 @@ const DATA = {
     { week: "2026-W43", label: "Oct 19", equifax: 750, experian: 753, transunion: 751 },
     { week: "2026-W44", label: "Oct 26", equifax: 750, experian: 755, transunion: 753 },
     { week: "2026-W45", label: "Nov 2", equifax: 758, experian: 756, transunion: 754 },
-    { week: "2026-W46", label: "Nov 9", equifax: 758, experian: 758, transunion: 755 },
-    { week: "2026-W47", label: "Nov 16", equifax: 758, experian: 764, transunion: 751 },
+    { week: "2026-W46", label: "Nov 9", equifax: 758, experian: 764, transunion: 755 },
+    { week: "2026-W47", label: "Nov 21", equifax: 758, experian: 764, transunion: 751 },
   ],
   chart_annotations: [
-    { week: "2026-W47", label: "Paid down", line: 1 },
+    { week: "2026-W46", label: "Paid down", line: 1 },
     { week: "2026-W47", label: "New inquiry", line: 2 },
   ],
   factors: [
@@ -102,20 +102,13 @@ const DATA = {
       label: "TransUnion",
       items: [
         { label: "Payment history", value: "On time, across the file" },
-        { label: "Amounts owed", value: "Balances came down this week" },
-        { label: "New credit", value: "A new inquiry from Harbor Premier Bank on Nov 14" },
+        { label: "Amounts owed", value: "Balances came down last week" },
+        { label: "New credit", value: "A new inquiry from Harbor Premier Bank on Nov 18" },
         { label: "Credit mix", value: "Cards plus an auto loan" },
       ],
     },
   ],
   consumer_alerts: [
-    {
-      id: "score-experian",
-      title: "Your Experian FICO Score 8 rose 6 points this week.",
-      detail: "It moved from 758 to 764, still in the Very good band.",
-      status: "Score up",
-      tone: "success" as StatusTone,
-    },
     {
       id: "score-transunion",
       title: "Your TransUnion FICO Score 8 dropped 4 points after a new inquiry from Harbor Premier Bank.",
@@ -196,7 +189,7 @@ const DATA = {
       on_time_pct: 100.0,
       hard_inquiries: 0,
       adverse_count: 0,
-      report_date_display: "Nov 16, 2026",
+      report_date_display: "Nov 21, 2026",
     },
     {
       bureau: "experian" as BureauKey,
@@ -206,17 +199,17 @@ const DATA = {
       on_time_pct: 100.0,
       hard_inquiries: 1,
       adverse_count: 3,
-      report_date_display: "Nov 16, 2026",
+      report_date_display: "Nov 21, 2026",
     },
     {
       bureau: "transunion" as BureauKey,
       label: "TransUnion",
       fico8: 751,
-      utilization_pct: 0.0,
+      utilization_pct: 7.9,
       on_time_pct: 100.0,
       hard_inquiries: 2,
       adverse_count: 0,
-      report_date_display: "Nov 16, 2026",
+      report_date_display: "Nov 21, 2026",
     },
   ],
   vantage: [
@@ -239,7 +232,7 @@ const DATA = {
     { bureau: "experian" as BureauKey, creditor_display: "Summit Bank", masked: "****1234", balance: "$950", limit: "$12,000", util: "8%" },
     { bureau: "experian" as BureauKey, creditor_display: "Northstar Credit Union", masked: "****5678", balance: "$400", limit: "$5,000", util: "8%" },
     { bureau: "experian" as BureauKey, creditor_display: "Cascadia Auto Finance", masked: "****9012", balance: "$11,050", limit: "n/a", util: "n/a" },
-    { bureau: "transunion" as BureauKey, creditor_display: "Summit Bank", masked: "****1234", balance: "$950", limit: "$10,000", util: "10%" },
+    { bureau: "transunion" as BureauKey, creditor_display: "Summit Bank", masked: "****1234", balance: "$950", limit: "$12,000", util: "8%" },
     { bureau: "transunion" as BureauKey, creditor_display: "Northstar Credit Union", masked: "****5678", balance: "$400", limit: "$5,000", util: "8%" },
     { bureau: "transunion" as BureauKey, creditor_display: "Cascadia Auto Finance", masked: "****9012", balance: "$11,050", limit: "n/a", util: "n/a" },
   ],
@@ -273,6 +266,138 @@ function rowTone(tone: StatusTone): RowTone | undefined {
   return undefined;
 }
 
+function joinSentences(title: string, detail: string): string {
+  const head = title.trim();
+  const lead = /[.!?]$/.test(head) ? head : `${head}.`;
+  return `${lead} ${detail.trim()}`;
+}
+
+type ChartSeries = { label: string; values: number[] };
+type ChartNote = { at: number; label: string; line?: number; value?: number };
+
+function HistoryChart({
+  series,
+  xLabels,
+  floor,
+  ceiling,
+  annotations,
+}: {
+  series: ChartSeries[];
+  xLabels: string[];
+  floor: number;
+  ceiling: number;
+  annotations: ChartNote[];
+}) {
+  const theme = useGrokTheme();
+  const W = 1280;
+  const H = 360;
+  const pad = { l: 64, r: 40, t: 48, b: 48 };
+  const innerW = W - pad.l - pad.r;
+  const innerH = H - pad.t - pad.b;
+  const last = Math.max(xLabels.length - 1, 1);
+  const xAt = (i: number) => pad.l + (i / last) * innerW;
+  const span = Math.max(ceiling - floor, 1);
+  const yAt = (v: number) => pad.t + ((ceiling - v) / span) * innerH;
+  const mid = Math.round((floor + ceiling) / 2);
+  const ticks = Array.from(new Set([floor, mid, ceiling]));
+  const labelPx = 14;
+  const ink = theme.text.secondary;
+  const colors = series.map((_, i) => theme.dataviz.categorical[i] ?? theme.dataviz.other);
+  const bySlot: Record<number, ChartNote[]> = {};
+  annotations.forEach((a) => {
+    bySlot[a.at] = bySlot[a.at] ? [...bySlot[a.at], a] : [a];
+  });
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      width="100%"
+      role="img"
+      aria-label={series.map((s) => s.label).join(", ")}
+    >
+      {ticks.map((tick) => (
+        <g key={`t-${tick}`}>
+          <line
+            x1={pad.l}
+            x2={W - pad.r}
+            y1={yAt(tick)}
+            y2={yAt(tick)}
+            stroke={theme.border.subtle}
+            strokeWidth={1}
+          />
+          <text
+            x={pad.l - 12}
+            y={yAt(tick) + 5}
+            textAnchor="end"
+            fill={ink}
+            fontFamily={theme.font.family}
+            fontSize={labelPx}
+          >
+            {String(tick)}
+          </text>
+        </g>
+      ))}
+      {xLabels.map((lab, i) =>
+        lab ? (
+          <text
+            key={`x-${i}`}
+            x={xAt(i)}
+            y={H - 16}
+            textAnchor={i === 0 ? "start" : i === last ? "end" : "middle"}
+            fill={ink}
+            fontFamily={theme.font.family}
+            fontSize={labelPx}
+          >
+            {lab}
+          </text>
+        ) : null,
+      )}
+      {series.map((s, si) => {
+        const pts = s.values.map((v, i) => `${xAt(i)},${yAt(v)}`);
+        const d = pts.map((pt, i) => `${i === 0 ? "M" : "L"}${pt}`).join(" ");
+        const area = `${d} L${xAt(s.values.length - 1)},${yAt(floor)} L${xAt(0)},${yAt(floor)} Z`;
+        return (
+          <g key={s.label}>
+            {si === 0 ? (
+              <path d={area} fill={colors[si]} opacity={0.16} />
+            ) : null}
+            <path d={d} fill="none" stroke={colors[si]} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+          </g>
+        );
+      })}
+      {Object.entries(bySlot).flatMap(([slot, notes]) =>
+        notes.map((a, ni) => {
+          const at = Number(slot);
+          const vals = series[a.line ?? 0]?.values ?? series[0].values;
+          const dataY = vals[at];
+          const lift = ((notes.length - 1 - ni) * (span * 0.08));
+          const pin = Math.min(ceiling, (a.value ?? dataY) + span * 0.14 + lift);
+          const x = xAt(at);
+          const y = yAt(pin);
+          const ly = yAt(dataY);
+          const nearRight = at >= xLabels.length - 2;
+          const tx = nearRight ? x - 8 : x;
+          const ty = y - 4;
+          return (
+            <g key={`${a.label}-${at}`}>
+              <line x1={x} y1={ly - 6} x2={tx} y2={ty + 4} stroke={ink} strokeWidth={1} />
+              <text
+                x={tx}
+                y={ty}
+                textAnchor={nearRight ? "end" : "middle"}
+                fill={ink}
+                fontFamily={theme.font.family}
+                fontSize={labelPx}
+              >
+                {a.label}
+              </text>
+            </g>
+          );
+        }),
+      )}
+    </svg>
+  );
+}
+
 function ScoreFigure({ value }: { value: number }) {
   const theme = useGrokTheme();
   return (
@@ -288,9 +413,6 @@ function ScoreFigure({ value }: { value: number }) {
         }}
       >
         {value}
-      </div>
-      <div style={{ ...theme.font.caption, color: theme.text.secondary, marginTop: 6 }}>
-        FICO Score 8
       </div>
     </div>
   );
@@ -368,20 +490,6 @@ export default function App() {
     return DATA.history.slice(-Math.max(n, 1));
   }, [range]);
 
-  const chartPoints = useMemo(() => {
-    return series.map((p, i) => ({
-      label: sparseLabel(p.label, i, series.length),
-      value: p.equifax,
-    }));
-  }, [series]);
-
-  const chartLines = useMemo(() => {
-    return [
-      { label: "Experian FICO Score 8", values: series.map((p) => p.experian) },
-      { label: "TransUnion FICO Score 8", values: series.map((p) => p.transunion) },
-    ];
-  }, [series]);
-
   const annotations = useMemo(() => {
     return DATA.chart_annotations.flatMap((a) => {
       const at = series.findIndex((p) => p.week === a.week);
@@ -436,14 +544,20 @@ export default function App() {
           />
         ) : null}
         {showChart ? (
-          <LineChart
-            points={chartPoints}
-            lines={chartLines}
-            floor={720}
-            ceiling={800}
-            labels={["Equifax FICO Score 8"]}
-            annotations={annotations}
-          />
+          <>
+            <Legend names={["Equifax FICO Score 8", "Experian FICO Score 8", "TransUnion FICO Score 8"]} />
+            <HistoryChart
+              series={[
+                { label: "Equifax FICO Score 8", values: series.map((p) => p.equifax) },
+                { label: "Experian FICO Score 8", values: series.map((p) => p.experian) },
+                { label: "TransUnion FICO Score 8", values: series.map((p) => p.transunion) },
+              ]}
+              xLabels={series.map((p, i) => sparseLabel(p.label, i, series.length))}
+              floor={720}
+              ceiling={800}
+              annotations={annotations}
+            />
+          </>
         ) : (
           <Text>Your history will build here after the next weekly pull.</Text>
         )}
@@ -457,7 +571,7 @@ export default function App() {
           <Text>You are in good shape. Keep paying on time and stay in this band.</Text>
         ) : (
           <>
-            <Callout lead={leadMove.status}>{`${leadMove.title} ${leadMove.detail}`}</Callout>
+            <Callout lead={leadMove.status}>{joinSentences(leadMove.title, leadMove.detail)}</Callout>
             {moreMoves.length > 0 ? (
               <Rows
                 rows={moreMoves.map((m) => ({
