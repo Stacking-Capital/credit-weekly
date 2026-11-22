@@ -22,7 +22,7 @@ The Blueprint Page is the product/architecture write-up, not a user's monitor da
 ## Consumer layout
 The Page is a simple, wide consumer dashboard, not a data dump:
 
-1. Hero with one Credit-Health Index number, a one-word band, week-over-week change, and a small "Not a FICO score" note, then a history LineChart with a 4-week / 12-week / All range and an annotation on a new-inquiry week.
+1. Hero with one Credit-Health Index number, a one-word band, week-over-week change, and a small "Not a FICO score" note, then a history LineChart with a 4-week / 12-week / All range. The Jordan Example chart uses 12 synthetic weeks, with annotations on the paydown and the new-inquiry week.
 2. "This week" — at most three plain-English alert cards with Status pills; the rest behind "See all changes".
 3. "Your next move" — one to three optimizer action cards (pay-by dates and amounts) and a utilization band meter (0 / 1–9 / 10–20 / 21–29 / 30+).
 4. Three bureau tiles (Equifax, Experian, TransUnion) with utilization, on-time %, inquiries, negatives, and last updated.

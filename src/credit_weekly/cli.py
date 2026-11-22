@@ -95,8 +95,13 @@ def cmd_demo(args: argparse.Namespace) -> None:
     root = Path(args.root or Path(__file__).resolve().parents[2])
     s1 = _load_json(root / "fixtures" / "example_snapshot_week1.json")
     s2 = _load_json(root / "fixtures" / "example_snapshot_week2.json")
+    history_path = root / "fixtures" / "example_chi_history.json"
+    snapshots = json.loads(history_path.read_text(encoding="utf-8")) if history_path.exists() else []
+    if not isinstance(snapshots, list):
+        snapshots = []
+    snapshots.extend([s1, s2])
     diff_obj = diff_snapshots(s1, s2)
-    bundle = build_dashboard_bundle([s1, s2], diff_obj)
+    bundle = build_dashboard_bundle(snapshots, diff_obj)
 
     dash_dir = root / "dashboard"
     dash_dir.mkdir(parents=True, exist_ok=True)
