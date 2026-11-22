@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import getpass
 import json
 from pathlib import Path
@@ -59,7 +60,10 @@ def cmd_decrypt(args: argparse.Namespace) -> None:
     pw = args.passphrase or getpass.getpass("Vault passphrase: ")
     data = decrypt_json_file(args.input, pw)
     out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    os.chmod(out, 0o600)
+    # Never print snapshot contents, passphrases, or envelope fields.
     print(f"Decrypted -> {out}")
 
 
