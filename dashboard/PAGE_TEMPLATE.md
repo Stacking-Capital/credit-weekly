@@ -5,6 +5,7 @@ This folder is the **summary-first Grok Page template** the weekly skill writes 
 | File | Role |
 |---|---|
 | `ExampleDashboard.canvas.tsx` | Canonical consumer layout: Credit-Health Index hero (not a FICO), annotated history chart, 3 alert cards, next-move cards and utilization meter, three bureau tiles, collapsed full report. Embedded `DATA` is synthetic "Jordan Example" only. |
+| `DreamStateDashboard.canvas.tsx` | Dream-state consumer layout once Stages 1–3 are on: three FICO Score 8 tiles, annotated 3-bureau score history, key factors, alerts, next-move cards, utilization meter, bureau tiles, a small VantageScore 3.0 row, and a collapsed full report. Synthetic "Jordan Example" only. Do not use this as the Stage 1 template. |
 | `example_bundle.json` | PII-scrubbed bundle shape produced by `credit_weekly.cli export-dashboard`. |
 | `index.html` + `data.js` | Offline local viewer (secondary UX). |
 
@@ -13,7 +14,7 @@ This folder is the **summary-first Grok Page template** the weekly skill writes 
 2. Copy the structure of `ExampleDashboard.canvas.tsx`.
 3. Replace `DATA` with that week's bundle. Keep `is_example_data: false` on real pages.
 4. If `<store>/canvas_id.txt` exists, `WriteCanvas` that id. Otherwise create a **new** private Page in the owner's Library and save the new id.
-5. Never overwrite the public Blueprint Page (`1efc1c3f-a5c5-4ed8-9edc-1e45c4ea07e4`).
+5. Never overwrite the public Blueprint Page (`1efc1c3f-a5c5-4ed8-9edc-1e45c4ea07e4`), the Stage 1 example Page (`a669f6e0-1cb8-4435-a852-d8388d8d0880`), or the dream-state example Page (`15e9c3b4-0c70-4bdc-9ad0-ff712e3e4585`).
 6. Never put SSN, full DOB, passwords, or full account numbers on the Page. Never imitate a bureau's official UI. No `<form>`.
 
 The Blueprint Page is the product/architecture write-up, not a user's monitor dashboard.
