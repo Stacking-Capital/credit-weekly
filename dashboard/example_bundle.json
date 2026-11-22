@@ -19,6 +19,86 @@
   },
   "history": [
     {
+      "week": "2026-W36",
+      "credit_health_index": 76,
+      "credit_health_band": "Fair",
+      "utilization_pct": 24.2,
+      "revolving_balance_usd": 3630.0,
+      "adverse_accounts": 1
+    },
+    {
+      "week": "2026-W37",
+      "credit_health_index": 76,
+      "credit_health_band": "Fair",
+      "utilization_pct": 23.5,
+      "revolving_balance_usd": 3525.0,
+      "adverse_accounts": 1
+    },
+    {
+      "week": "2026-W38",
+      "credit_health_index": 77,
+      "credit_health_band": "Fair",
+      "utilization_pct": 22.8,
+      "revolving_balance_usd": 3420.0,
+      "adverse_accounts": 1
+    },
+    {
+      "week": "2026-W39",
+      "credit_health_index": 78,
+      "credit_health_band": "Fair",
+      "utilization_pct": 21.5,
+      "revolving_balance_usd": 3225.0,
+      "adverse_accounts": 1
+    },
+    {
+      "week": "2026-W40",
+      "credit_health_index": 80,
+      "credit_health_band": "Good",
+      "utilization_pct": 20.4,
+      "revolving_balance_usd": 3060.0,
+      "adverse_accounts": 1
+    },
+    {
+      "week": "2026-W41",
+      "credit_health_index": 81,
+      "credit_health_band": "Good",
+      "utilization_pct": 19.2,
+      "revolving_balance_usd": 2880.0,
+      "adverse_accounts": 1
+    },
+    {
+      "week": "2026-W42",
+      "credit_health_index": 82,
+      "credit_health_band": "Good",
+      "utilization_pct": 18.5,
+      "revolving_balance_usd": 2775.0,
+      "adverse_accounts": 1
+    },
+    {
+      "week": "2026-W43",
+      "credit_health_index": 82,
+      "credit_health_band": "Good",
+      "utilization_pct": 17.8,
+      "revolving_balance_usd": 2670.0,
+      "adverse_accounts": 1
+    },
+    {
+      "week": "2026-W44",
+      "credit_health_index": 83,
+      "credit_health_band": "Good",
+      "utilization_pct": 17.2,
+      "revolving_balance_usd": 2580.0,
+      "adverse_accounts": 1
+    },
+    {
+      "week": "2026-W45",
+      "credit_health_index": 83,
+      "credit_health_band": "Good",
+      "utilization_pct": 16.9,
+      "revolving_balance_usd": 2535.0,
+      "adverse_accounts": 1
+    },
+    {
       "week": "2026-W46",
       "credit_health_index": 84,
       "credit_health_band": "Good",
@@ -36,6 +116,10 @@
     }
   ],
   "chart_annotations": [
+    {
+      "week": "2026-W47",
+      "label": "Paid down"
+    },
     {
       "week": "2026-W47",
       "label": "New inquiry"

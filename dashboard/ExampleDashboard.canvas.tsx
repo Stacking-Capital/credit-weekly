@@ -29,6 +29,46 @@ const DATA = {
   },
   "history": [
     {
+      "week": "2026-W36",
+      "credit_health_index": 76
+    },
+    {
+      "week": "2026-W37",
+      "credit_health_index": 76
+    },
+    {
+      "week": "2026-W38",
+      "credit_health_index": 77
+    },
+    {
+      "week": "2026-W39",
+      "credit_health_index": 78
+    },
+    {
+      "week": "2026-W40",
+      "credit_health_index": 80
+    },
+    {
+      "week": "2026-W41",
+      "credit_health_index": 81
+    },
+    {
+      "week": "2026-W42",
+      "credit_health_index": 82
+    },
+    {
+      "week": "2026-W43",
+      "credit_health_index": 82
+    },
+    {
+      "week": "2026-W44",
+      "credit_health_index": 83
+    },
+    {
+      "week": "2026-W45",
+      "credit_health_index": 83
+    },
+    {
       "week": "2026-W46",
       "credit_health_index": 84
     },
@@ -38,6 +78,10 @@ const DATA = {
     }
   ],
   "chart_annotations": [
+    {
+      "week": "2026-W47",
+      "label": "Paid down"
+    },
     {
       "week": "2026-W47",
       "label": "New inquiry"
@@ -273,6 +317,13 @@ function weekLabel(week: string): string {
   return m ? `W${m[1]}` : week;
 }
 
+function sparseLabel(label: string, index: number, count: number): string {
+  if (count <= 5) return label;
+  const last = count - 1;
+  const keep = new Set([0, last, Math.round(last / 3), Math.round((2 * last) / 3)]);
+  return keep.has(index) ? label : "";
+}
+
 function bandTone(band: string): StatusTone {
   if (band === "Excellent" || band === "Good") return "success";
   if (band === "Fair") return "accent";
@@ -383,7 +434,7 @@ function UtilizationMeter({ pct, bandId }: { pct: number; bandId: string }) {
 }
 
 export default function App() {
-  const [range, setRange] = useState<RangeKey>("all");
+  const [range, setRange] = useState<RangeKey>("12w");
   const [showAllChanges, setShowAllChanges] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const defaultBureau = (DATA.bureaus[1]?.bureau ?? DATA.bureaus[0]?.bureau ?? "experian") as BureauKey;
@@ -395,13 +446,13 @@ export default function App() {
   const visibleAlerts = showAllChanges ? DATA.consumer_alerts : featuredAlerts;
 
   const series = useMemo(() => {
-    const pts = DATA.history.map((h) => ({
-      label: weekLabel(h.week),
+    const n = range === "4w" ? 4 : range === "12w" ? 12 : DATA.history.length;
+    const slice = DATA.history.slice(-Math.max(n, 1));
+    return slice.map((h, i) => ({
+      label: sparseLabel(weekLabel(h.week), i, slice.length),
       value: h.credit_health_index,
       week: h.week,
     }));
-    const n = range === "4w" ? 4 : range === "12w" ? 12 : pts.length;
-    return pts.slice(-Math.max(n, 1));
   }, [range]);
 
   const annotations = useMemo(() => {

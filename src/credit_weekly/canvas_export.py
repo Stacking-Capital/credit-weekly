@@ -439,16 +439,17 @@ def build_dashboard_bundle(
     raw_alerts = list((latest_diff or {}).get("alerts", []))
     consumer_alerts = _plain_alerts(raw_alerts)
 
-    inquiry_weeks: list[dict[str, str]] = []
-    seen_weeks: set[str] = set()
+    chart_annotations: list[dict[str, str]] = []
     current_week = latest.get("week_label", "")
-    for al in raw_alerts:
-        if al.get("category") != "new_hard_inquiry":
-            continue
-        week = current_week
-        if week and week not in seen_weeks:
-            inquiry_weeks.append({"week": week, "label": "New inquiry"})
-            seen_weeks.add(week)
+    if current_week:
+        if any(
+            a.get("category") == "balance_change"
+            and "decreased" in str(a.get("title", "")).lower()
+            for a in raw_alerts
+        ):
+            chart_annotations.append({"week": current_week, "label": "Paid down"})
+        if any(a.get("category") == "new_hard_inquiry" for a in raw_alerts):
+            chart_annotations.append({"week": current_week, "label": "New inquiry"})
 
     band = classify_utilization_band(
         float(hs.get("utilization_pct", 0.0) or 0.0),
@@ -476,7 +477,7 @@ def build_dashboard_bundle(
             "credit_health_delta": delta,
         },
         "history": history_points,
-        "chart_annotations": inquiry_weeks,
+        "chart_annotations": chart_annotations,
         "utilization_meter": {
             "pct": hs.get("utilization_pct", 0.0),
             "band_id": _METER_ID.get(str(band.get("id")), "benchmark"),
@@ -570,6 +571,13 @@ const DATA = __DATA_JSON__ as {
 function weekLabel(week: string): string {
   const m = week.match(/W(\d+)$/i);
   return m ? `W${m[1]}` : week;
+}
+
+function sparseLabel(label: string, index: number, count: number): string {
+  if (count <= 5) return label;
+  const last = count - 1;
+  const keep = new Set([0, last, Math.round(last / 3), Math.round((2 * last) / 3)]);
+  return keep.has(index) ? label : "";
 }
 
 function bandTone(band: string): StatusTone {
@@ -682,7 +690,7 @@ function UtilizationMeter({ pct, bandId }: { pct: number; bandId: string }) {
 }
 
 export default function App() {
-  const [range, setRange] = useState<RangeKey>("all");
+  const [range, setRange] = useState<RangeKey>("12w");
   const [showAllChanges, setShowAllChanges] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const defaultBureau = (DATA.bureaus[1]?.bureau ?? DATA.bureaus[0]?.bureau ?? "experian") as BureauKey;
@@ -694,13 +702,13 @@ export default function App() {
   const visibleAlerts = showAllChanges ? DATA.consumer_alerts : featuredAlerts;
 
   const series = useMemo(() => {
-    const pts = DATA.history.map((h) => ({
-      label: weekLabel(h.week),
+    const n = range === "4w" ? 4 : range === "12w" ? 12 : DATA.history.length;
+    const slice = DATA.history.slice(-Math.max(n, 1));
+    return slice.map((h, i) => ({
+      label: sparseLabel(weekLabel(h.week), i, slice.length),
       value: h.credit_health_index,
       week: h.week,
     }));
-    const n = range === "4w" ? 4 : range === "12w" ? 12 : pts.length;
-    return pts.slice(-Math.max(n, 1));
   }, [range]);
 
   const annotations = useMemo(() => {
