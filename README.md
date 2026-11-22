@@ -55,7 +55,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 PYTHONPATH=src python3 -m credit_weekly.cli demo --root .
 ```
 
-`demo` writes `dashboard/data.js` and `dashboard/ExampleDashboard.canvas.tsx` from the synthetic fixtures. Parse real PDFs only on the owner's machine; never commit PDFs, vault files, or `canvas_id.txt`.
+`demo` writes `dashboard/data.js`, `dashboard/example_bundle.json`, and a generated `dashboard/generated-demo.canvas.tsx` from the synthetic fixtures. It does not overwrite the hand-authored `dashboard/ExampleDashboard.canvas.tsx`. Parse real PDFs only on the owner's machine; never commit PDFs, vault files, or `canvas_id.txt`.
 
 ## Disclaimer
 
